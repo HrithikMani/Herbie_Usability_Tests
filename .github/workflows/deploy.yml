@@ -1,0 +1,36 @@
+name: Deploy SvelteKit to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # Runs this workflow whenever code is pushed to 'main'
+
+permissions:
+  contents: write  # Allows pushing the built files
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the Svelte app
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        run: |
+          git config --global user.name 'HrithikMani'
+          git config --global user.email 'hrithik.mani2000@gmail.com'
+          git add -f build
+          git commit -m "Deploy to GitHub Pages"
+          git push origin `git subtree split --prefix build main`:gh-pages --force
