@@ -5,7 +5,7 @@ export default {
     adapter: adapter({
       pages: 'build',  // Output directory
       assets: 'build',
-      fallback: null
+     fallback: 'index.html'
     }),
     paths: {
       base: process.env.NODE_ENV === 'production' ? '/Herbie_Usability_Tests' : ''
