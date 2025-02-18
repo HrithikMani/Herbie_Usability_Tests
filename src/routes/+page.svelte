@@ -67,7 +67,7 @@
   
   <main class="container">
     <Header bind:searchQuery {paginateTasks}/>
-
+fdaf
     <TaskList tasks={paginatedTasks} />
     <Pagination {currentPage} {totalPages} {setPage} {prevPage} {nextPage} {generatePagination} />
   </main>
