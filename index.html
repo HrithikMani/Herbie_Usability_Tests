@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usability Testing</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <header class="header">
+        <h1>Usability Testing</h1>
+        <input type="text" id="searchQuery" placeholder="Search tasks..." class="search-box" oninput="filterTasks()">
+    </header>
+
+    <div class="task-list" id="taskList"></div>
+
+    <div class="pagination">
+        <button onclick="prevPage()" id="prevBtn" class="pagination-button">Previous</button>
+        <div id="paginationNumbers"></div>
+        <button onclick="nextPage()" id="nextBtn" class="pagination-button">Next</button>
+    </div>
+
+    <div id="usabilityTestResults" style="display: none;"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+[
+    { "id": 1, "name": "Register Patient", "description": "Register a new patient with personal details.", "url": "https://example.com/task1" },
+    { "id": 2, "name": "Prescribe Medication", "description": "Prescribe a new medication and dismiss warnings.", "url": "https://example.com/task2" },
+    { "id": 3, "name": "Update Records", "description": "Update patient medical records.", "url": "https://example.com/task3" }
+]
