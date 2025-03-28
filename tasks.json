@@ -1,5 +1,4 @@
 [
-    { "id": 1, "name": "Register Patient", "description": "Register a new patient with personal details.", "url": "https://example.com/task1" },
-    { "id": 2, "name": "Prescribe Medication", "description": "Prescribe a new medication and dismiss warnings.", "url": "https://example.com/task2" },
-    { "id": 3, "name": "Update Records", "description": "Update patient medical records.", "url": "https://example.com/task3" }
+    { "id": 1, "name": "Register Patient", "description": "Register a new patient with personal details.", "url": "https://hrithik.webchartnow.com/webchart.cgi?f=chart" },
+    { "id": 2, "name": "Prescribe Medication", "description": "Write Amoxicillin 500mg capsule 2 caps daily for 7 days.  For Prescriber: Anna Bates.  Total quantity: 14 and no refills. Allow substitutions   Send the script to \"MIE Test Pharmacy\"", "url": "https://hrithik.webchartnow.com/webchart.cgi?f=chart&s=pat&pat_id=18" }
 ]
