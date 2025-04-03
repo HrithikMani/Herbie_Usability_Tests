@@ -2,6 +2,25 @@ let tasks = [];
 let filteredTasks = [];
 let currentPage = 1;
 const itemsPerPage = 2;
+let testerName = "";
+
+// Handle tester form submission
+document.getElementById('testerForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    testerName = document.getElementById('testerName').value.trim();
+    
+    if (testerName) {
+        // Hide modal and show main content
+        document.getElementById('testerModal').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        
+        // Set welcome message
+        document.getElementById('welcomeMessage').textContent = `Welcome, ${testerName}!`;
+        
+        // Load tasks
+        fetchTasks();
+    }
+});
 
 // Fetch tasks from tasks.json
 async function fetchTasks() {
@@ -69,7 +88,7 @@ function renderPagination() {
     }
 
     document.getElementById("prevBtn").disabled = (currentPage === 1);
-    document.getElementById("nextBtn").disabled = (currentPage === totalPages);
+    document.getElementById("nextBtn").disabled = (currentPage === totalPages || totalPages === 0);
 }
 
 // Pagination Controls
@@ -108,7 +127,15 @@ function startTest(taskId) {
     taskCard.querySelector(".task-status").textContent = "In Progress";
     taskCard.querySelector(".task-status").classList.add("in-progress");
 
-    window.postMessage({ action: "startUsabilityTest", taskId: task.id, taskName: task.name, description: task.description }, "*");
+    // Include tester name in the postMessage
+    window.postMessage({ 
+        action: "startUsabilityTest", 
+        taskId: task.id, 
+        taskName: task.name, 
+        description: task.description,
+        testerName: testerName
+    }, "*");
+    
     window.open(task.url, "_blank");
 }
 
@@ -125,6 +152,7 @@ function observeAttributeChanges() {
                     taskCard.querySelector(".task-status").classList.add("completed");
                     let resultsDiv = document.getElementById(`test-results-${newResults.taskId}`);
                     resultsDiv.innerHTML = `<h3>Test Results</h3>
+                        <p><strong>Tester:</strong> ${testerName}</p>
                         <p><strong>Time:</strong> ${newResults.time} seconds</p>
                         <p><strong>Steps:</strong> ${newResults.steps}</p>
                         <p><strong>Errors:</strong> ${newResults.errors}</p>
@@ -136,6 +164,5 @@ function observeAttributeChanges() {
     observer.observe(resultDiv, { attributes: true });
 }
 
-// Initialize Page
-fetchTasks();
+// Initialize the observer
 observeAttributeChanges();

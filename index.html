@@ -5,23 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Usability Testing</title>
     <link rel="stylesheet" href="style.css">
-
 </head>
 <body>
-    <header class="header">
-        <h1>Usability Testing</h1>
-        <input type="text" id="searchQuery" placeholder="Search tasks..." class="search-box" oninput="filterTasks()">
-    </header>
-
-    <div class="task-list" id="taskList"></div>
-
-    <div class="pagination">
-        <button onclick="prevPage()" id="prevBtn" class="pagination-button">Previous</button>
-        <div id="paginationNumbers"></div>
-        <button onclick="nextPage()" id="nextBtn" class="pagination-button">Next</button>
+    <!-- Tester Name Modal -->
+    <div id="testerModal" class="modal">
+        <div class="modal-content">
+            <h2>Welcome to Usability Testing</h2>
+            <p>Please enter your name to continue:</p>
+            <form id="testerForm">
+                <input type="text" id="testerName" placeholder="Your Name" required>
+                <button type="submit" class="button">Submit</button>
+            </form>
+        </div>
     </div>
 
-    <div id="usabilityTestResults" style="display: none;"></div>
+    <div id="mainContent" style="display: none;">
+        <header class="header">
+            <div class="header-left">
+                <h1>Usability Testing</h1>
+                <p id="welcomeMessage"></p>
+            </div>
+            <input type="text" id="searchQuery" placeholder="Search tasks..." class="search-box" oninput="filterTasks()">
+        </header>
+
+        <div class="task-list" id="taskList"></div>
+
+        <div class="pagination">
+            <button onclick="prevPage()" id="prevBtn" class="pagination-button">Previous</button>
+            <div id="paginationNumbers"></div>
+            <button onclick="nextPage()" id="nextBtn" class="pagination-button">Next</button>
+        </div>
+
+        <div id="usabilityTestResults" style="display: none;"></div>
+    </div>
 
     <script src="script.js"></script>
 </body>
