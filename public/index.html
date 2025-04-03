@@ -25,7 +25,10 @@
                 <h1>Usability Testing</h1>
                 <p id="welcomeMessage"></p>
             </div>
-            <input type="text" id="searchQuery" placeholder="Search tasks..." class="search-box" oninput="filterTasks()">
+            <div class="header-right">
+                <input type="text" id="searchQuery" placeholder="Search tasks..." class="search-box" oninput="filterTasks()">
+                <button id="logoutButton" class="logout-button">Logout</button>
+            </div>
         </header>
 
         <div class="task-list" id="taskList"></div>

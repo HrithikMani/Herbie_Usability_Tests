@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Real-time usability testing leaderboard showing active testers and completion times">
+    <meta name="theme-color" content="#62929a">
+    <title>Usability Testing Leaderboard</title>
+    <link rel="stylesheet" href="leaderboard.css">
+    <!-- Preconnect to WebSocket server -->
+    <link rel="preconnect" href="wss://localhost">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Usability Testing Leaderboard</h1>
+            <div class="header-actions">
+                <a href="/" class="button small" aria-label="Return to main page">Back to Tests</a>
+                <button id="resetBtn" class="button small danger" aria-label="Reset all leaderboard data">Reset Leaderboard</button>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <section class="board-section" aria-labelledby="active-testers-heading">
+                <h2 id="active-testers-heading">Active Testers</h2>
+                <div id="activeTesters" class="card-container" aria-live="polite">
+                    <div class="empty-message">No active testers</div>
+                </div>
+            </section>
+
+            <section class="board-section" aria-labelledby="leaderboard-heading">
+                <h2 id="leaderboard-heading">Leaderboard</h2>
+                <div id="completedTests" class="card-container" aria-live="polite">
+                    <div class="empty-message">No completed tests</div>
+                </div>
+            </section>
+        </main>
+
+        <div id="connectionStatus" class="connection-status connecting" aria-live="polite">
+            Connecting...
+        </div>
+    </div>
+
+    <noscript>
+        <div class="error-message">
+            <p>This application requires JavaScript to be enabled.</p>
+            <p>Please enable JavaScript and reload the page.</p>
+        </div>
+    </noscript>
+
+    <script src="leaderboard.js"></script>
+</body>
+</html>
