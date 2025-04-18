@@ -651,14 +651,19 @@ function handleTestResults(resultsData) {
         // Update results display
         const resultsDiv = document.getElementById(`test-results-${newResults.taskId}`);
         if (resultsDiv) {
+            
             resultsDiv.innerHTML = `
-                <h3>Test Results</h3>
-                <p><strong>Tester:</strong> ${escapeHtml(state.testerName)}</p>
-                <p><strong>Time:</strong> ${newResults.time} seconds</p>
-                <p><strong>Steps:</strong> ${newResults.steps}</p>
-                <p><strong>Errors:</strong> ${newResults.errors}</p>
-                <p><strong>Rating:</strong> ${newResults.rating}/5</p>
+            <h3>Test Results</h3>
             `;
+
+            for (const key in newResults) {
+                if (newResults.hasOwnProperty(key)) {
+                  const value = newResults[key];
+                resultsDiv.innerHTML = resultsDiv.innerHTML + `<p><strong>${key}:</strong> ${value}</p>`
+                }
+             }
+    
+         
         }
         
         // Send test completion to WebSocket server
