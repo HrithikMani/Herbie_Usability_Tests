@@ -372,25 +372,40 @@ function sendWebSocketMessage(message) {
 }
 
 /**
- * Fetch tasks from tasks.json
+ * Fetch tasks from tasks.xlsx
  */
 async function fetchTasks() {
     try {
-        const response = await fetch("tasks.json");
+        // Fetch the Excel file
+        const response = await fetch("tasks.xlsx");
+        
         if (!response.ok) {
             throw new Error(`Failed to load tasks (${response.status}: ${response.statusText})`);
         }
         
-        const data = await response.json();
+        // Get the ArrayBuffer from the response
+        const arrayBuffer = await response.arrayBuffer();
         
+        // Parse the Excel file using SheetJS
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        // Get the first worksheet
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert the worksheet to JSON
+        const data = XLSX.utils.sheet_to_json(worksheet);
+        
+        // Update state
         state.tasks = Array.isArray(data) ? data : [];
         state.filteredTasks = [...state.tasks];
         
+        // Render the UI
         renderTasks();
         renderPagination();
     } catch (error) {
         console.error("Error fetching tasks:", error);
-        showError("Failed to load tasks. Please refresh the page to try again.");
+        showError("Failed to load Excel tasks file. Please ensure SheetJS is properly loaded and try again.");
     }
 }
 
@@ -557,13 +572,14 @@ function startTest(taskId) {
         taskName: task.name || 'Unknown Task'
     });
     
-    // Include tester name in the postMessage
-    window.postMessage({ 
-        action: "startUsabilityTest", 
-        taskId: task.id, 
-        taskName: task.name || 'Unknown Task', 
-        description: task.description || '', 
-        testerName: state.testerName
+    // Include herbie_script in the postMessage
+    window.postMessage({
+        action: "startUsabilityTest",
+        taskId: task.id,
+        taskName: task.name || 'Unknown Task',
+        description: task.description || '',
+        testerName: state.testerName,
+        testHerbieScript: task.herbie_script || '' // Add the Herbie script
     }, "*");
     
     // Open test URL in new tab
@@ -573,7 +589,6 @@ function startTest(taskId) {
         console.warn(`Task #${task.id} does not have a URL`);
     }
 }
-
 /**
  * Set up the test result observer
  */
