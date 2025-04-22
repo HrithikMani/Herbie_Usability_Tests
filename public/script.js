@@ -651,19 +651,88 @@ function handleTestResults(resultsData) {
         // Update results display
         const resultsDiv = document.getElementById(`test-results-${newResults.taskId}`);
         if (resultsDiv) {
+            // Start with the basic header
+            let htmlContent = `<h3>Test Results</h3>`;
             
-            resultsDiv.innerHTML = `
-            <h3>Test Results</h3>
-            `;
-
+            // Add top-level results like taskId and time
             for (const key in newResults) {
-                if (newResults.hasOwnProperty(key)) {
-                  const value = newResults[key];
-                resultsDiv.innerHTML = resultsDiv.innerHTML + `<p><strong>${key}:</strong> ${value}</p>`
+                if (newResults.hasOwnProperty(key) && key !== 'verify_statements') {
+                    htmlContent += `<p><strong>${key}:</strong> ${newResults[key]}</p>`;
                 }
-             }
-    
-         
+            }
+            
+            // Handle verification statements specially
+            if (newResults.verify_statements) {
+                try {
+                    // Parse the statements
+                    const statements = JSON.parse(newResults.verify_statements);
+                    
+                    // Create container for verification results
+                    htmlContent += `<div class="verification-container">
+                        <h3>Verification Results</h3>
+                        <div class="verification-list">`;
+                    
+                    // Process each verification statement
+                    for (const [statement, result] of Object.entries(statements)) {
+                        const isSuccess = String(result).toLowerCase().includes('verified');
+                        const statusClass = isSuccess ? 'success' : 'failure';
+                        const statusIcon = isSuccess ? '✓' : '✗';
+                        
+                        // Try to parse more details from the statement
+                        let expected = '';
+                        let element = '';
+                        
+                        // Extract the expected value and element selector if possible
+                        const detailMatch = statement.match(/verify[^"]*"([^"]+)"(?:[^"]*"([^"]+)")?/i);
+                        if (detailMatch) {
+                            expected = detailMatch[1];
+                            element = detailMatch[2] || '';
+                        }
+                        
+                        // Determine verification type
+                        let type = 'Text';
+                        const typeMatch = statement.match(/verify\s+(text|url|title|state|value|placeholder|url)/i);
+                        if (typeMatch) {
+                            type = typeMatch[1].charAt(0).toUpperCase() + typeMatch[1].slice(1);
+                        }
+                        
+                        // Create verification item
+                        htmlContent += `
+                            <div class="verification-item ${statusClass}">
+                                <div class="verification-header">
+                                    <span class="verification-icon">${statusIcon}</span>
+                                    <span class="verification-type">${type} Verification</span>
+                                </div>
+                                <div class="verification-details">
+                                    <div class="verification-statement">
+                                        <strong>Expected:</strong> <span class="verification-code">${escapeHtml(expected)}</span>
+                                    </div>`;
+                        
+                        // Only add element information if we have it
+                        if (element) {
+                            htmlContent += `
+                                <div class="verification-location">
+                                    <strong>Element:</strong> <span class="verification-code">${escapeHtml(element)}</span>
+                                </div>`;
+                        }
+                        
+                        htmlContent += `
+                                    <div class="verification-status">
+                                        <strong>Status:</strong> ${isSuccess ? 'Passed' : 'Failed'}
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
+                    
+                    htmlContent += `</div></div>`;
+                } catch (error) {
+                    console.error('Error parsing verification statements:', error);
+                    htmlContent += `<p><strong>verify_statements:</strong> Error parsing verification results</p>`;
+                }
+            }
+            
+            // Update the results div with our formatted HTML
+            resultsDiv.innerHTML = htmlContent;
         }
         
         // Send test completion to WebSocket server
@@ -683,6 +752,17 @@ function handleTestResults(resultsData) {
     }
 }
 
+// Helper function to escape HTML special characters
+function escapeHtml(text) {
+    if (typeof text !== 'string') return '';
+    
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 /**
  * Show an error message
  * @param {string} message - The error message to display
