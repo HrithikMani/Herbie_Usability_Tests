@@ -1,8 +1,4 @@
-/**
- * Main Application Script
- * Handles testing interface, WebSocket communication,
- * and test result tracking
- */
+// script.js — Complete, with proper verify_statements rendering
 
 // Application state
 const state = {
@@ -16,29 +12,21 @@ const state = {
     reconnectTimeout: null,
     isReconnecting: false,
     observer: null
-};
-
-// Element cache for better performance
-const elemCache = {};
-
-/**
- * Initialize the application
- */
-function init() {
-    // Cache DOM elements for better performance
+  };
+  
+  // Cached elements
+  const elemCache = {};
+  
+  /** Initialize the application */
+  function init() {
     cacheElements();
-    
-    // Check for stored tester name
     checkStoredTesterName();
-    
-    // Set up event listeners
     setupEventListeners();
-}
-
-/**
- * Cache DOM elements for better performance
- */
-function cacheElements() {
+    setupTestResultObserver();
+  }
+  
+  /** Cache DOM elements for performance */
+  function cacheElements() {
     elemCache.testerModal = document.getElementById('testerModal');
     elemCache.testerForm = document.getElementById('testerForm');
     elemCache.testerName = document.getElementById('testerName');
@@ -51,761 +39,316 @@ function cacheElements() {
     elemCache.prevBtn = document.getElementById('prevBtn');
     elemCache.nextBtn = document.getElementById('nextBtn');
     elemCache.usabilityTestResults = document.getElementById('usabilityTestResults');
-    
-    // Check for header-right element and create if needed
+  
+    // Add leaderboard link if missing
     const headerRight = document.querySelector('.header-right');
     if (headerRight && !document.querySelector('.header-right a[href="/leaderboard"]')) {
-        const leaderboardLink = document.createElement('a');
-        leaderboardLink.href = '/leaderboard';
-        leaderboardLink.className = 'button';
-        leaderboardLink.textContent = 'View Leaderboard';
-        leaderboardLink.target = '_blank';
-        headerRight.insertBefore(leaderboardLink, headerRight.firstChild);
+      const link = document.createElement('a');
+      link.href = '/leaderboard';
+      link.className = 'button';
+      link.textContent = 'View Leaderboard';
+      link.target = '_blank';
+      headerRight.insertBefore(link, headerRight.firstChild);
     }
-}
-
-/**
- * Check for stored tester name in localStorage
- */
-function checkStoredTesterName() {
-    const storedName = localStorage.getItem('testerName');
-    
-    if (storedName) {
-        // User is already logged in
-        state.testerName = storedName;
-        
-        if (elemCache.testerModal) elemCache.testerModal.style.display = 'none';
-        if (elemCache.mainContent) elemCache.mainContent.style.display = 'block';
-        if (elemCache.welcomeMessage) elemCache.welcomeMessage.textContent = `Welcome, ${state.testerName}!`;
-        
-        // Connect to WebSocket
-        connectWebSocket();
-        
-        // Fetch tasks
-        fetchTasks();
-    } else if (elemCache.testerModal) {
-        // Show the login modal
-        elemCache.testerModal.style.display = 'flex';
+  }
+  
+  /** Show login modal or load tasks */
+  function checkStoredTesterName() {
+    const stored = localStorage.getItem('testerName');
+    if (stored) {
+      state.testerName = stored;
+      elemCache.testerModal.style.display = 'none';
+      elemCache.mainContent.style.display = 'block';
+      elemCache.welcomeMessage.textContent = `Welcome, ${state.testerName}!`;
+      connectWebSocket();
+      fetchTasks();
+    } else {
+      elemCache.testerModal.style.display = 'flex';
     }
-}
-
-/**
- * Set up event listeners
- */
-function setupEventListeners() {
-    // Tester form submission
-    if (elemCache.testerForm) {
-        elemCache.testerForm.addEventListener('submit', handleTesterFormSubmit);
-    }
-    
-    // Logout button
-    if (elemCache.logoutButton) {
-        elemCache.logoutButton.addEventListener('click', handleLogout);
-    }
-    
-    // Search input
-    if (elemCache.searchQuery) {
-        elemCache.searchQuery.addEventListener('input', filterTasks);
-    }
-    
-    // Set up test result observer
-    setupTestResultObserver();
-    
-    // Window visibility change
+  }
+  
+  /** Set up button, form, and visibility event listeners */
+  function setupEventListeners() {
+    elemCache.testerForm.addEventListener('submit', handleTesterFormSubmit);
+    elemCache.logoutButton.addEventListener('click', handleLogout);
+    elemCache.searchQuery.addEventListener('input', filterTasks);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-}
-
-/**
- * Handle visibility change event
- */
-function handleVisibilityChange() {
-    if (document.visibilityState === 'visible') {
-        // Reconnect if needed when tab becomes visible
-        if (state.socket?.readyState !== WebSocket.OPEN && !state.isReconnecting) {
-            console.log('Tab became visible, reconnecting WebSocket...');
-            connectWebSocket();
-        }
+  }
+  
+  function handleVisibilityChange() {
+    if (document.visibilityState === 'visible' && state.socket?.readyState !== WebSocket.OPEN && !state.isReconnecting) {
+      connectWebSocket();
     }
-}
-
-/**
- * Handle tester form submission
- * @param {Event} event - The form submit event
- */
-function handleTesterFormSubmit(event) {
-    event.preventDefault();
-    
-    if (!elemCache.testerName) return;
-    
-    state.testerName = elemCache.testerName.value.trim();
-    
-    if (state.testerName) {
-        // Store name in localStorage
-        localStorage.setItem('testerName', state.testerName);
-        
-        // Hide modal and show main content
-        if (elemCache.testerModal) elemCache.testerModal.style.display = 'none';
-        if (elemCache.mainContent) elemCache.mainContent.style.display = 'block';
-        
-        // Set welcome message
-        if (elemCache.welcomeMessage) {
-            elemCache.welcomeMessage.textContent = `Welcome, ${state.testerName}!`;
-        }
-        
-        // Connect to WebSocket
-        connectWebSocket();
-        
-        // Load tasks
-        fetchTasks();
-    }
-}
-
-/**
- * Handle logout
- */
-function handleLogout() {
-    // Remove tester name from localStorage
+  }
+  
+  /** Login form handler */
+  function handleTesterFormSubmit(e) {
+    e.preventDefault();
+    const name = elemCache.testerName.value.trim();
+    if (!name) return;
+    state.testerName = name;
+    localStorage.setItem('testerName', name);
+    elemCache.testerModal.style.display = 'none';
+    elemCache.mainContent.style.display = 'block';
+    elemCache.welcomeMessage.textContent = `Welcome, ${name}!`;
+    connectWebSocket();
+    fetchTasks();
+  }
+  
+  /** Logout handler */
+  function handleLogout() {
     localStorage.removeItem('testerName');
-    
-    // Reset tester name variable
-    state.testerName = "";
-    
-    // Show modal and hide main content
-    if (elemCache.testerModal) elemCache.testerModal.style.display = 'flex';
-    if (elemCache.mainContent) elemCache.mainContent.style.display = 'none';
-    
-    // Clear form input
-    if (elemCache.testerName) elemCache.testerName.value = '';
-    
-    // Close WebSocket connection if it exists
+    state.testerName = '';
+    elemCache.testerModal.style.display = 'flex';
+    elemCache.mainContent.style.display = 'none';
     closeWebSocket();
-}
-
-/**
- * Connect to WebSocket server
- */
-function connectWebSocket() {
+  }
+  
+  /** WebSocket connect with exponential backoff */
+  function connectWebSocket() {
     if (state.isReconnecting) return;
-    
     state.isReconnecting = true;
-    
-    // Clear any existing reconnect timeout
-    if (state.reconnectTimeout) {
-        clearTimeout(state.reconnectTimeout);
-    }
-    
-    // Calculate reconnect delay with exponential backoff
-    const reconnectDelay = Math.min(1000 * Math.pow(1.5, state.reconnectAttempts), 30000);
-    
-    console.log(`Connecting to WebSocket server (attempt ${state.reconnectAttempts + 1})...`);
-    
-    try {
-        // Get the current host and create WebSocket URL
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
-        const wsUrl = `${protocol}//${host}`;
-        
-        // Create a new WebSocket connection
-        state.socket = new WebSocket(wsUrl);
-        
-        state.socket.addEventListener('open', handleSocketOpen);
-        state.socket.addEventListener('message', handleSocketMessage);
-        state.socket.addEventListener('close', handleSocketClose);
-        state.socket.addEventListener('error', handleSocketError);
-    } catch (error) {
-        console.error('Error creating WebSocket connection:', error);
-        scheduleReconnect();
-    }
-}
-
-/**
- * Handle WebSocket open event
- */
-function handleSocketOpen() {
-    console.log('Connected to WebSocket server');
+    if (state.reconnectTimeout) clearTimeout(state.reconnectTimeout);
+    const delay = Math.min(1000 * Math.pow(1.5, state.reconnectAttempts), 30000);
+    console.log(`WS reconnect in ${delay}ms`);
+    state.reconnectTimeout = setTimeout(() => {
+      state.reconnectAttempts++;
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      state.socket = new WebSocket(`${proto}//${location.host}`);
+      state.socket.addEventListener('open', handleSocketOpen);
+      state.socket.addEventListener('message', handleSocketMessage);
+      state.socket.addEventListener('close', handleSocketClose);
+      state.socket.addEventListener('error', handleSocketError);
+    }, delay);
+  }
+  
+  function handleSocketOpen() {
+    console.log('WS open');
     state.reconnectAttempts = 0;
     state.isReconnecting = false;
-    
-    // Start heartbeat to keep connection alive
     startHeartbeat();
-}
-
-/**
- * Handle WebSocket message event
- * @param {MessageEvent} event - The message event
- */
-function handleSocketMessage(event) {
-    try {
-        const data = JSON.parse(event.data);
-        
-        // Handle different message types
-        switch (data.type) {
-            case 'stateUpdate':
-            case 'initialState':
-                console.log(`Received ${data.type} from server`);
-                break;
-                
-            case 'heartbeat':
-                console.log('Heartbeat received');
-                break;
-                
-            default:
-                console.warn('Unknown message type:', data.type);
-        }
-    } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+  }
+  
+  function handleSocketMessage(event) {
+    const data = JSON.parse(event.data);
+    switch (data.type) {
+      case 'initialState':
+      case 'stateUpdate':
+        updateActiveTesters(data.activeTesters);
+        updateCompletedTests(data.completedTests);
+        break;
+      default:
+        console.warn('Unknown WS', data.type);
     }
-}
-
-/**
- * Handle WebSocket close event
- * @param {CloseEvent} event - The close event
- */
-function handleSocketClose(event) {
-    const reason = event.reason || 'Unknown reason';
-    console.log(`WebSocket connection closed: ${reason} (code: ${event.code})`);
-    
+  }
+  
+  function handleSocketClose(e) {
+    console.log('WS closed', e.code);
     scheduleReconnect();
-}
-
-/**
- * Handle WebSocket error event
- * @param {Event} event - The error event
- */
-function handleSocketError(event) {
-    console.error('WebSocket error:', event);
-    
-    // Let the close handler schedule the reconnect
-}
-
-/**
- * Schedule a reconnection attempt
- */
-function scheduleReconnect() {
-    const maxReconnectAttempts = 10;
-    
-    if (state.reconnectAttempts >= maxReconnectAttempts) {
-        console.log('Maximum reconnection attempts reached');
-        state.isReconnecting = false;
-        return;
+  }
+  
+  function handleSocketError() {
+    console.error('WS error');
+  }
+  
+  function scheduleReconnect() {
+    if (state.reconnectAttempts < 10) {
+      state.isReconnecting = false;
+      connectWebSocket();
     }
-    
-    const delay = Math.min(1000 * Math.pow(1.5, state.reconnectAttempts), 30000);
-    console.log(`Scheduling reconnect in ${delay}ms (attempt ${state.reconnectAttempts + 1})`);
-    
-    state.reconnectTimeout = setTimeout(() => {
-        state.reconnectAttempts++;
-        connectWebSocket();
-    }, delay);
-    
-    state.isReconnecting = true;
-}
-
-/**
- * Start heartbeat to keep connection alive
- */
-function startHeartbeat() {
-    const heartbeatInterval = 30000; // 30 seconds
-    
-    // Clear any existing heartbeat interval
-    if (window.heartbeatInterval) {
-        clearInterval(window.heartbeatInterval);
-    }
-    
-    // Set up new heartbeat interval
+  }
+  
+  /** Heartbeat pings */
+  function startHeartbeat() {
+    if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
     window.heartbeatInterval = setInterval(() => {
-        if (state.socket && state.socket.readyState === WebSocket.OPEN) {
-            console.log('Sending heartbeat');
-            state.socket.send(JSON.stringify({ type: 'heartbeat' }));
-        } else {
-            clearInterval(window.heartbeatInterval);
-        }
-    }, heartbeatInterval);
-}
-
-/**
- * Close WebSocket connection
- */
-function closeWebSocket() {
-    // Clear heartbeat interval
-    if (window.heartbeatInterval) {
-        clearInterval(window.heartbeatInterval);
-        window.heartbeatInterval = null;
-    }
-    
-    // Clear reconnect timeout
-    if (state.reconnectTimeout) {
-        clearTimeout(state.reconnectTimeout);
-        state.reconnectTimeout = null;
-    }
-    
-    // Close the socket if it exists
-    if (state.socket) {
-        if (state.socket.readyState === WebSocket.OPEN || state.socket.readyState === WebSocket.CONNECTING) {
-            state.socket.close();
-        }
-        state.socket = null;
-    }
-    
+      if (state.socket && state.socket.readyState === WebSocket.OPEN) {
+        state.socket.send(JSON.stringify({ type: 'heartbeat' }));
+      }
+    }, 30000);
+  }
+  
+  /** Close WS and clear timers */
+  function closeWebSocket() {
+    clearInterval(window.heartbeatInterval);
+    clearTimeout(state.reconnectTimeout);
+    if (state.socket) state.socket.close();
     state.isReconnecting = false;
-}
-
-/**
- * Send a message to the WebSocket server
- * @param {Object} message - The message to send
- * @returns {boolean} - Whether the message was sent
- */
-function sendWebSocketMessage(message) {
-    if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
-        console.warn('Cannot send message, WebSocket is not connected');
-        return false;
+  }
+  
+  /** Send JSON message */
+  function sendWebSocketMessage(msg) {
+    if (state.socket?.readyState === WebSocket.OPEN) {
+      state.socket.send(JSON.stringify(msg));
+      return true;
     }
-    
+    return false;
+  }
+  
+  /** Fetch tasks.xlsx, parse to JSON, then render */
+  async function fetchTasks() {
     try {
-        const messageString = JSON.stringify(message);
-        state.socket.send(messageString);
-        return true;
-    } catch (error) {
-        console.error('Error sending WebSocket message:', error);
-        return false;
+      const res = await fetch('tasks.xlsx');
+      if (!res.ok) throw new Error(res.statusText);
+      const buf = await res.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      state.tasks = XLSX.utils.sheet_to_json(ws) || [];
+      state.filteredTasks = [...state.tasks];
+      renderTasks();
+      renderPagination();
+    } catch (err) {
+      console.error('Fetch tasks error', err);
+      showError('Failed to load tasks file');
     }
-}
-
-/**
- * Fetch tasks from tasks.xlsx
- */
-async function fetchTasks() {
-    try {
-        // Fetch the Excel file
-        const response = await fetch("tasks.xlsx");
-        
-        if (!response.ok) {
-            throw new Error(`Failed to load tasks (${response.status}: ${response.statusText})`);
-        }
-        
-        // Get the ArrayBuffer from the response
-        const arrayBuffer = await response.arrayBuffer();
-        
-        // Parse the Excel file using SheetJS
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-        
-        // Get the first worksheet
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        
-        // Convert the worksheet to JSON
-        const data = XLSX.utils.sheet_to_json(worksheet);
-        
-        // Update state
-        state.tasks = Array.isArray(data) ? data : [];
-        state.filteredTasks = [...state.tasks];
-        
-        // Render the UI
-        renderTasks();
-        renderPagination();
-    } catch (error) {
-        console.error("Error fetching tasks:", error);
-        showError("Failed to load Excel tasks file. Please ensure SheetJS is properly loaded and try again.");
-    }
-}
-
-/**
- * Filter tasks based on search query
- */
-function filterTasks() {
-    if (!elemCache.searchQuery) return;
-    
-    const query = elemCache.searchQuery.value.toLowerCase();
-    
-    state.filteredTasks = state.tasks.filter(task => 
-        task.name && task.name.toLowerCase().includes(query)
-    );
-    
+  }
+  
+  /** Filter tasks by search */
+  function filterTasks() {
+    const q = elemCache.searchQuery.value.toLowerCase();
+    state.filteredTasks = state.tasks.filter(t => t.name.toLowerCase().includes(q));
     state.currentPage = 1;
-    renderTasks();
-    renderPagination();
-}
-
-/**
- * Render tasks to the DOM
- */
-function renderTasks() {
-    if (!elemCache.taskList) return;
-    
-    elemCache.taskList.innerHTML = "";
-    
+    renderTasks(); renderPagination();
+  }
+  
+  /** Render task cards */
+  function renderTasks() {
+    elemCache.taskList.innerHTML = '';
     const start = (state.currentPage - 1) * state.itemsPerPage;
-    const paginatedTasks = state.filteredTasks.slice(start, start + state.itemsPerPage);
-    
-    if (paginatedTasks.length === 0) {
-        elemCache.taskList.innerHTML = `
-            <div class="empty-message">
-                No tasks found${elemCache.searchQuery && elemCache.searchQuery.value ? ' matching your search' : ''}.
-            </div>
-        `;
-        return;
+    const slice = state.filteredTasks.slice(start, start + state.itemsPerPage);
+    if (!slice.length) {
+      elemCache.taskList.innerHTML = `<div class="empty-message">No tasks${elemCache.searchQuery.value?' matching search':''}</div>`;
+      return;
     }
-    
-    paginatedTasks.forEach(task => {
-        if (!task || !task.id) return;
-        
-        const taskCard = document.createElement("div");
-        taskCard.classList.add("task-card");
-        taskCard.dataset.taskId = task.id;
-        
-        const taskName = escapeHtml(task.name || 'Untitled Task');
-        const taskDescription = escapeHtml(task.description || 'No description');
-        
-        taskCard.innerHTML = `
-            <div class="task-header">
-                <h3>${taskName}</h3>
-                <span class="task-status">Not Started</span>
-            </div>
-            <p>${taskDescription}</p>
-            <div class="test-results" id="test-results-${task.id}"></div>
-            <button class="button start-test-btn" data-task-id="${task.id}">Start Test</button>
-        `;
-        
-        elemCache.taskList.appendChild(taskCard);
+    slice.forEach(task => {
+      const card = document.createElement('div');
+      card.className = 'task-card';
+      card.dataset.taskId = task.id;
+      card.innerHTML = `
+        <div class="task-header">
+          <h3>${escapeHtml(task.name)}</n3>
+          <span class="task-status">Not Started</span>
+        </div>
+        <p>${escapeHtml(task.description)}</p>
+        <div class="test-results" id="test-results-${task.id}"></div>
+        <button class="button start-test-btn" data-task-id="${task.id}">Start Test</button>
+      `;
+      elemCache.taskList.appendChild(card);
     });
-    
-    // Add event listeners to start buttons
-    document.querySelectorAll('.start-test-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            const taskId = parseInt(button.dataset.taskId);
-            if (!isNaN(taskId)) {
-                startTest(taskId);
-            }
-        });
+    document.querySelectorAll('.start-test-btn').forEach(btn => {
+      btn.addEventListener('click', () => startTest(+btn.dataset.taskId));
     });
-}
-
-/**
- * Render pagination controls
- */
-function renderPagination() {
-    if (!elemCache.paginationNumbers || !elemCache.prevBtn || !elemCache.nextBtn) return;
-    
-    elemCache.paginationNumbers.innerHTML = "";
-    
-    const totalPages = Math.max(1, Math.ceil(state.filteredTasks.length / state.itemsPerPage));
-    
-    // Ensure current page is valid
-    state.currentPage = Math.max(1, Math.min(state.currentPage, totalPages));
-    
-    // Create page buttons
-    for (let i = 1; i <= totalPages; i++) {
-        const button = document.createElement("button");
-        button.innerText = i;
-        button.className = `pagination-button ${i === state.currentPage ? "active" : ""}`;
-        button.addEventListener('click', () => setPage(i));
-        elemCache.paginationNumbers.appendChild(button);
+  }
+  
+  /** Render pagination buttons */
+  function renderPagination() {
+    const total = Math.ceil(state.filteredTasks.length / state.itemsPerPage);
+    elemCache.paginationNumbers.innerHTML = '';
+    for (let i=1; i<=total; i++) {
+      const btn = document.createElement('button');
+      btn.textContent = i;
+      btn.className = `pagination-button ${i===state.currentPage?'active':''}`;
+      btn.addEventListener('click', ()=> setPage(i));
+      elemCache.paginationNumbers.appendChild(btn);
     }
-    
-    // Update prev/next buttons
-    elemCache.prevBtn.disabled = (state.currentPage === 1);
-    elemCache.nextBtn.disabled = (state.currentPage === totalPages || totalPages === 0);
-}
-
-/**
- * Set the current page
- * @param {number} page - The page number to set
- */
-function setPage(page) {
-    const totalPages = Math.ceil(state.filteredTasks.length / state.itemsPerPage);
-    
-    if (page >= 1 && page <= totalPages) {
-        state.currentPage = page;
-        renderTasks();
-        renderPagination();
-        
-        // Scroll to top of task list
-        if (elemCache.taskList) {
-            elemCache.taskList.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
-}
-
-/**
- * Go to previous page
- */
-function prevPage() {
-    if (state.currentPage > 1) {
-        setPage(state.currentPage - 1);
-    }
-}
-
-/**
- * Go to next page
- */
-function nextPage() {
-    const totalPages = Math.ceil(state.filteredTasks.length / state.itemsPerPage);
-    
-    if (state.currentPage < totalPages) {
-        setPage(state.currentPage + 1);
-    }
-}
-
-/**
- * Start a test
- * @param {number} taskId - The ID of the task to start
- */
-function startTest(taskId) {
-    const task = state.tasks.find(t => t.id === taskId);
+    elemCache.prevBtn.disabled = state.currentPage===1;
+    elemCache.nextBtn.disabled = state.currentPage===total;
+  }
+  
+  function setPage(p) { state.currentPage = p; renderTasks(); renderPagination(); elemCache.taskList.scrollIntoView({behavior:'smooth'}); }
+  function prevPage() { if(state.currentPage>1) setPage(state.currentPage-1); }
+  function nextPage() { const total = Math.ceil(state.filteredTasks.length/state.itemsPerPage); if(state.currentPage<total) setPage(state.currentPage+1); }
+  
+  /** Start a usability test */
+  function startTest(id) {
+    const task = state.tasks.find(t=>t.id===id);
     if (!task) return;
-    
-    const taskCard = document.querySelector(`[data-task-id='${task.id}']`);
-    if (!taskCard) return;
-    
-    const statusElement = taskCard.querySelector(".task-status");
-    if (statusElement) {
-        statusElement.textContent = "In Progress";
-        statusElement.classList.remove("completed");
-        statusElement.classList.add("in-progress");
-    }
-    
-    // Send start test event to WebSocket server
-    sendWebSocketMessage({
-        type: 'startTest',
-        testerName: state.testerName,
-        taskId: task.id,
-        taskName: task.name || 'Unknown Task'
-    });
-    
-    // Include herbie_script in the postMessage
-    window.postMessage({
-        action: "startUsabilityTest",
-        taskId: task.id,
-        taskName: task.name || 'Unknown Task',
-        description: task.description || '',
-        testerName: state.testerName,
-        testHerbieScript: task.herbie_script || '' // Add the Herbie script
-    }, "*");
-    
-    // Open test URL in new tab
-    if (task.url) {
-        window.open(task.url, "_blank");
-    } else {
-        console.warn(`Task #${task.id} does not have a URL`);
-    }
-}
-/**
- * Set up the test result observer
- */
-function setupTestResultObserver() {
-    if (!elemCache.usabilityTestResults) return;
-    
-    // Disconnect any existing observer
-    if (state.observer) {
-        state.observer.disconnect();
-    }
-    
-    // Create a new observer
-    state.observer = new MutationObserver((mutations) => {
-        for (let mutation of mutations) {
-            if (mutation.type === "attributes" && mutation.attributeName === "data-test-results") {
-                try {
-                    const resultsData = mutation.target.getAttribute("data-test-results");
-                    handleTestResults(resultsData);
-                } catch (error) {
-                    console.error('Error handling test results:', error);
-                }
-            }
+    const card = document.querySelector(`[data-task-id='${id}']`);
+    card.querySelector('.task-status').textContent='In Progress';
+  
+    // Notify server
+    sendWebSocketMessage({ type:'startTest', testerName: state.testerName, taskId: id, taskName: task.name });
+  
+    // Post message to Herbie iframe/script
+    window.postMessage({ action:'startUsabilityTest', testerName: state.testerName, taskId: id, taskName: task.name, description: task.description||'', testHerbieScript: task.herbie_script||''}, '*');
+  
+    if (task.url) window.open(task.url, '_blank');
+  }
+  
+  /** Observe for incoming test-results JSON */
+  function setupTestResultObserver() {
+    if (state.observer) state.observer.disconnect();
+    state.observer = new MutationObserver(muts => {
+      muts.forEach(m => {
+        if (m.type==='attributes' && m.attributeName==='data-test-results') {
+          handleTestResults(m.target.getAttribute('data-test-results'));
         }
+      });
     });
-    
-    // Start observing
-    state.observer.observe(elemCache.usabilityTestResults, { attributes: true });
-}
-
-/**
- * Handle test results
- * @param {string} resultsData - The test results data as a JSON string
- */
-function handleTestResults(resultsData) {
-    if (!resultsData) return;
-    
+    state.observer.observe(elemCache.usabilityTestResults, { attributes:true });
+  }
+  
+  /** Render and send completeTest, including verify_statements */
+  function handleTestResults(resultsData) {
+    let newResults;
     try {
-        const newResults = JSON.parse(resultsData);
-        
-        // Validate results data
-        if (!newResults || !newResults.taskId) {
-            console.warn('Invalid test results data:', newResults);
-            return;
-        }
-        
-        const taskCard = document.querySelector(`[data-task-id='${newResults.taskId}']`);
-        if (!taskCard) {
-            console.warn(`Task card for task #${newResults.taskId} not found`);
-            return;
-        }
-        
-        // Update task status
-        const statusElement = taskCard.querySelector(".task-status");
-        if (statusElement) {
-            statusElement.textContent = "Completed";
-            statusElement.classList.remove("in-progress");
-            statusElement.classList.add("completed");
-        }
-        
-        // Update results display
-        const resultsDiv = document.getElementById(`test-results-${newResults.taskId}`);
-        if (resultsDiv) {
-            // Start with the basic header
-            let htmlContent = `<h3>Test Results</h3>`;
-            
-            // Add top-level results like taskId and time
-            for (const key in newResults) {
-                if (newResults.hasOwnProperty(key) && key !== 'verify_statements') {
-                    htmlContent += `<p><strong>${key}:</strong> ${newResults[key]}</p>`;
-                }
-            }
-            
-            // Handle verification statements specially
-            if (newResults.verify_statements) {
-                try {
-                    // Parse the statements
-                    const statements = JSON.parse(newResults.verify_statements);
-                    
-                    // Create container for verification results
-                    htmlContent += `<div class="verification-container">
-                        <h3>Verification Results</h3>
-                        <div class="verification-list">`;
-                    
-                    // Process each verification statement
-                    for (const [statement, result] of Object.entries(statements)) {
-                        const isSuccess = String(result).toLowerCase().includes('verified');
-                        const statusClass = isSuccess ? 'success' : 'failure';
-                        const statusIcon = isSuccess ? '✓' : '✗';
-                        
-                        // Try to parse more details from the statement
-                        let expected = '';
-                        let element = '';
-                        
-                        // Extract the expected value and element selector if possible
-                        const detailMatch = statement.match(/verify[^"]*"([^"]+)"(?:[^"]*"([^"]+)")?/i);
-                        if (detailMatch) {
-                            expected = detailMatch[1];
-                            element = detailMatch[2] || '';
-                        }
-                        
-                        // Determine verification type
-                        let type = 'Text';
-                        const typeMatch = statement.match(/verify\s+(text|url|title|state|value|placeholder|url)/i);
-                        if (typeMatch) {
-                            type = typeMatch[1].charAt(0).toUpperCase() + typeMatch[1].slice(1);
-                        }
-                        
-                        // Create verification item
-                        htmlContent += `
-                            <div class="verification-item ${statusClass}">
-                                <div class="verification-header">
-                                    <span class="verification-icon">${statusIcon}</span>
-                                    <span class="verification-type">${type} Verification</span>
-                                </div>
-                                <div class="verification-details">
-                                    <div class="verification-statement">
-                                        <strong>Expected:</strong> <span class="verification-code">${escapeHtml(expected)}</span>
-                                    </div>`;
-                        
-                        // Only add element information if we have it
-                        if (element) {
-                            htmlContent += `
-                                <div class="verification-location">
-                                    <strong>Element:</strong> <span class="verification-code">${escapeHtml(element)}</span>
-                                </div>`;
-                        }
-                        
-                        htmlContent += `
-                                    <div class="verification-status">
-                                        <strong>Status:</strong> ${isSuccess ? 'Passed' : 'Failed'}
-                                    </div>
-                                </div>
-                            </div>`;
-                    }
-                    
-                    htmlContent += `</div></div>`;
-                } catch (error) {
-                    console.error('Error parsing verification statements:', error);
-                    htmlContent += `<p><strong>verify_statements:</strong> Error parsing verification results</p>`;
-                }
-            }
-            
-            // Update the results div with our formatted HTML
-            resultsDiv.innerHTML = htmlContent;
-        }
-        
-        // Send test completion to WebSocket server
-        sendWebSocketMessage({
-            type: 'completeTest',
-            testerName: state.testerName,
-            taskId: newResults.taskId,
-            taskName: state.tasks.find(t => t.id === newResults.taskId)?.name || 'Unknown Task',
-            time: parseFloat(newResults.time) || 0,
-            steps: parseInt(newResults.steps) || 0,
-            errors: parseInt(newResults.errors) || 0,
-            rating: parseInt(newResults.rating) || 0
-        });
-        
-    } catch (error) {
-        console.error('Error parsing test results:', error);
+      newResults = JSON.parse(resultsData);
+    } catch {
+      console.error('Invalid JSON in data-test-results');
+      return;
     }
-}
-
-// Helper function to escape HTML special characters
-function escapeHtml(text) {
-    if (typeof text !== 'string') return '';
-    
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-/**
- * Show an error message
- * @param {string} message - The error message to display
- */
-function showError(message) {
-    const errorElement = document.createElement('div');
-    errorElement.className = 'error-message';
-    errorElement.textContent = message;
-    
-    document.body.appendChild(errorElement);
-    
-    setTimeout(() => {
-        errorElement.classList.add('show');
-    }, 10);
-    
-    setTimeout(() => {
-        errorElement.classList.remove('show');
-        setTimeout(() => {
-            document.body.removeChild(errorElement);
-        }, 300);
-    }, 5000);
-}
-
-/**
- * Helper function to escape HTML
- * @param {string} unsafe - The string to escape
- * @returns {string} - The escaped string
- */
-function escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return '';
-    
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-// Wait for DOM to be ready before initializing
-document.addEventListener('DOMContentLoaded', init);
-
-// Expose pagination functions globally
-window.prevPage = prevPage;
-window.nextPage = nextPage;
-window.setPage = setPage;
+  
+    // Update status
+    const card = document.querySelector(`[data-task-id='${newResults.taskId}']`);
+    const statusEl = card.querySelector('.task-status');
+    statusEl.textContent = 'Completed';
+    statusEl.classList.replace('in-progress','completed');
+  
+    // Render results
+    const resultsDiv = document.getElementById(`test-results-${newResults.taskId}`);
+    let html = '<h3>Test Results</h3>';
+    Object.entries(newResults).forEach(([key,val])=>{
+      if (key==='verify_statements') return;
+      html += `<p><strong>${escapeHtml(key)}</strong>: ${escapeHtml(val.toString())}</p>`;
+    });
+  
+    // Verifications
+    try {
+      const verifs = JSON.parse(newResults.verify_statements);
+      html += '<div class="verifications"><h4>Verifications</h4>';
+      Object.entries(verifs).forEach(([assertion, result])=>{
+        const cls = result.success?'verification success':'verification failure';
+        html += `<div class="${cls}"><div class="assertion">${escapeHtml(assertion)}</div><div class="message">${escapeHtml(result.message)}</div></div>`;
+      });
+      html += '</div>';
+    } catch {
+      html += '<p>Error parsing verifications.</p>';
+    }
+  
+    resultsDiv.innerHTML = html;
+  
+    // Convert time and notify leaderboard
+    const [mins, secs] = (newResults.time||'0:00').split(':');
+    const timeSec = (parseInt(mins,10)||0)*60 + (parseFloat(secs)||0);
+    sendWebSocketMessage({ type:'completeTest', testerName:state.testerName, taskId:newResults.taskId, taskName:newResults.taskName, time:timeSec, steps:parseInt(newResults.steps,10)||0, errors:parseInt(newResults.errors,10)||0, rating:2.5 });
+  }
+  
+  /** HTML-escape a string */
+  function escapeHtml(text) {
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  }
+  
+  /** Show an error banner */
+  function showError(msg) {
+    const el = document.createElement('div');
+    el.className = 'error-message';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),5000);
+  }
+  
+  // Kick off after DOM load
+  document.addEventListener('DOMContentLoaded', init);
+  window.prevPage = prevPage;
+  window.nextPage = nextPage;
+  window.setPage = setPage;

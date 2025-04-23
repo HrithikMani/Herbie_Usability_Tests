@@ -151,7 +151,9 @@ function handleSocketMessage(event) {
             case 'heartbeat':
                 console.log('Heartbeat received');
                 break;
-                
+            case 'completeTest':
+                alert("hi")
+                break;
             default:
                 console.warn('Unknown message type:', data.type);
         }
@@ -328,6 +330,7 @@ function updateActiveTesters(testers) {
  * @param {Array} tests - The completed tests data
  */
 function updateCompletedTests(tests) {
+    console.log(tests)
     if (!elemCache.completedTests) return;
     
     // Display empty message if no completed tests
@@ -354,11 +357,8 @@ function updateCompletedTests(tests) {
         
         const testerName = escapeHtml(test.testerName || 'Unknown');
         const taskName = escapeHtml(test.taskName || 'Unknown Task');
-        const time = isNaN(test.time) ? 0 : test.time;
-        const steps = isNaN(test.steps) ? 0 : test.steps;
-        const errors = isNaN(test.errors) ? 0 : test.errors;
-        const rating = isNaN(test.rating) ? 0 : test.rating;
-        
+        const time = test.time;
+     
         entryElement.innerHTML = `
             <div class="rank ${rankClass}">${index + 1}</div>
             <div class="result-info">
@@ -366,10 +366,8 @@ function updateCompletedTests(tests) {
                 <p>Task: ${taskName}</p>
             </div>
             <div>
-                <div class="time">${time.toFixed(1)}s</div>
-                <div class="stats">
-                    Steps: ${steps} | Errors: ${errors} | Rating: ${rating}/5
-                </div>
+                <div class="time">${time}s</div>
+                
             </div>
         `;
         
