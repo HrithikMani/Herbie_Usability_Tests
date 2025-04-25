@@ -292,26 +292,49 @@ function updateActiveTesters(testers) {
     // Clear container before updating
     elemCache.activeTesters.innerHTML = '';
     
-    // Add each active tester
+    // Group testers by name to prevent duplicates
+    const testersByName = {};
+    
+    // Process testers to group by name
     testers.forEach(tester => {
         if (!tester || !tester.testerName || !tester.taskId) return;
         
-        const timerId = `${tester.testerName}-task-${tester.taskId}`;
-        const startTime = new Date(tester.startTime);
+        const testerName = tester.testerName;
+        
+        // If this tester isn't in our map yet, add them
+        if (!testersByName[testerName]) {
+            testersByName[testerName] = [];
+        }
+        
+        // Add this task to the tester's list
+        testersByName[testerName].push(tester);
+    });
+    
+    // Create a card for each unique tester
+    Object.keys(testersByName).forEach(testerName => {
+        const testerTasks = testersByName[testerName];
+        
+        // Sort tasks by start time (most recent first)
+        testerTasks.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+        
+        // Use the most recent task for display
+        const mostRecentTask = testerTasks[0];
+        
+        const timerId = `${mostRecentTask.testerName}-task-${mostRecentTask.taskId}`;
+        const startTime = new Date(mostRecentTask.startTime);
         
         const testerCard = document.createElement('div');
         testerCard.className = 'tester-card';
         
-        const testerName = escapeHtml(tester.testerName || 'Unknown');
-        const taskName = escapeHtml(tester.taskName || 'Unknown Task');
-   
+        const escapedTesterName = escapeHtml(mostRecentTask.testerName || 'Unknown');
+        const taskName = escapeHtml(mostRecentTask.taskName || 'Unknown Task');
+        
         testerCard.innerHTML = `
             <div class="tester-info">
-                <h3>${testerName}</h3>
+                <h3>${escapedTesterName}</h3>
                 <p>Task: ${taskName}</p>
             </div>
             <div class="timer" id="timer-${timerId}">00:00</div>
-            
         `;
         
         elemCache.activeTesters.appendChild(testerCard);
@@ -329,7 +352,6 @@ function updateActiveTesters(testers) {
  * @param {Array} tests - The completed tests data
  */
 function updateCompletedTests(tests) {
-    console.log(tests)
     if (!elemCache.completedTests) return;
     
     // Display empty message if no completed tests
@@ -341,10 +363,26 @@ function updateCompletedTests(tests) {
     // Clear container before updating
     elemCache.completedTests.innerHTML = '';
     
-    // Add each completed test
-    tests.forEach((test, index) => {
-        if (!test || !test.testerName) return;
+    // Group completed tests by tester name and task ID to avoid duplicates
+    const uniqueTests = {};
+    
+    tests.forEach(test => {
+        if (!test || !test.testerName || !test.taskId) return;
         
+        const key = `${test.testerName}-${test.taskId}`;
+        
+        // Keep only the most recent completion (or the fastest one if multiple exist)
+        if (!uniqueTests[key] || test.time < uniqueTests[key].time) {
+            uniqueTests[key] = test;
+        }
+    });
+    
+    // Convert back to array and sort by time (fastest first)
+    const uniqueTestsArray = Object.values(uniqueTests);
+    uniqueTestsArray.sort((a, b) => a.time - b.time);
+    
+    // Add each unique completed test
+    uniqueTestsArray.forEach((test, index) => {
         // Determine rank class (gold, silver, bronze)
         let rankClass = '';
         if (index === 0) rankClass = 'first';
@@ -366,10 +404,9 @@ function updateCompletedTests(tests) {
             </div>
             <div>
                 <div class="time">${time}s</div>
-                 <div class="stats">
+                <div class="stats">
                     Steps: ${test.steps} | Errors: ${test.errors} 
-            </div>
-                
+                </div>
             </div>
         `;
         

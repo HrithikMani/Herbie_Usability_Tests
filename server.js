@@ -1,5 +1,3 @@
-
-
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -108,11 +106,19 @@ function handleStartTest(data) {
     taskName: sanitize(data.taskName),
     startTime: new Date().toISOString()
   };
+  
+  // Remove any existing active tests for this tester + task combination
+  activeTesters = activeTesters.filter(t => !(t.testerName === entry.testerName && t.taskId === entry.taskId));
+  
+  // Also remove any active test for the same tester (they can only do one at a time)
   activeTesters = activeTesters.filter(t => t.testerName !== entry.testerName);
+  
+  // Add the new entry
   activeTesters.push(entry);
   saveData();
   broadcastState();
 }
+
 
 // Handle completeTest (without rating)
 function handleCompleteTest(data) {
@@ -125,14 +131,36 @@ function handleCompleteTest(data) {
     errors: parseInt(data.errors),
     completedAt: new Date().toISOString()
   };
+  
+  // Remove this tester from active testers for this task
   activeTesters = activeTesters.filter(t => !(t.testerName === entry.testerName && t.taskId === entry.taskId));
-  completedTests.push(entry);
+  
+  // Check if this task was already completed by this tester
+  const existingIndex = completedTests.findIndex(t => 
+    t.testerName === entry.testerName && t.taskId === entry.taskId
+  );
+  
+  // If it exists, replace it only if the new time is better
+  if (existingIndex >= 0) {
+    if (entry.time < completedTests[existingIndex].time) {
+      completedTests[existingIndex] = entry;
+    }
+  } else {
+    // Otherwise add it as a new completed test
+    completedTests.push(entry);
+  }
+  
+  // Sort by time (fastest first)
   completedTests.sort((a, b) => a.time - b.time);
-  if (completedTests.length > 100) completedTests = completedTests.slice(0, 100);
+  
+  // Limit to top 100
+  if (completedTests.length > 100) {
+    completedTests = completedTests.slice(0, 100);
+  }
+  
   saveData();
   broadcastState();
 }
-
 // WebSocket
 wss.on('connection', (ws, req) => {
   const ip = req.socket.remoteAddress;
@@ -146,6 +174,8 @@ wss.on('connection', (ws, req) => {
     if (msg.type === 'startTest' && validateStartTest(msg)) handleStartTest(msg);
     if (msg.type === 'completeTest' && validateCompleteTest(msg)) handleCompleteTest(msg);
     if (msg.type === 'heartbeat') sendMessage(ws, { type: 'heartbeat' });
+    // Add handler for getState requests
+    if (msg.type === 'getState') sendMessage(ws, { type: 'stateUpdate', activeTesters, completedTests });
   });
   ws.on('close', () => { clients.delete(ws); console.log(`Disconnected: ${ip}`); });
   ws.on('error', () => clients.delete(ws));

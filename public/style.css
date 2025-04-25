@@ -113,51 +113,86 @@ body {
     gap: 16px;
 }
 
-/* Task Card Styling */
+/* Enhanced Task Card Styling */
 .task-card {
     background: white;
-    padding: 16px;
+    padding: 16px 20px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     border-left: 6px solid #62929a;
 }
 
+.task-card:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Task Status Badges */
+.task-status {
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 15px;
+    display: inline-block;
+    text-align: center;
+    min-width: 100px;
+    font-size: 14px;
+}
+
+.task-status.not-started {
+    background-color: #f0f0f0;
+    color: #555;
+}
+
+.task-status.in-progress {
+    background-color: #f0ad4e; /* orange */
+    color: white;
+}
+
+.task-status.completed {
+    background-color: #5cb85c; /* green */
+    color: white;
+}
+
+/* Ensure the task header has proper spacing and alignment */
 .task-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-weight: bold;
+    margin-bottom: 10px;
 }
 
-.task-status {
-    font-weight: bold;
-    padding: 4px 8px;
-    border-radius: 4px;
-    background-color: #ddd;
-    color: #555;
+.task-header h3 {
+    margin: 0;
+    flex: 1;
 }
 
-.in-progress {
-    background-color: orange;
-    color: white;
-}
-
-.completed {
-    background-color: green;
-    color: white;
-}
-
-/* Test Results Section */
-.test-results {
+/* Button positioning */
+.task-card .button {
+    align-self: flex-end;
     margin-top: 10px;
-    background: #f1f3f4;
-    padding: 10px;
-    border-radius: 5px;
+}
+
+/* Test Results Section - Enhanced */
+.test-results {
+    margin-top: 15px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
     border-left: 5px solid #62929a;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.test-results h3 {
+    margin-top: 0;
+    color: #333;
+    font-size: 16px;
+    border-bottom: 1px solid #e1e4e8;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 /* Buttons */
@@ -202,35 +237,131 @@ body {
     background: #a0a0a0;
     cursor: not-allowed;
 }
+
 /* Styling for verification results */
 .verifications {
     margin-top: 1em;
     padding-top: 1em;
     border-top: 1px solid #ddd;
-  }
-  .verification {
+}
+
+.verification {
     display: flex;
     flex-direction: column;
     gap: 4px;
     padding: 10px;
     border-radius: 6px;
     margin-bottom: 8px;
-  }
-  .verification.success {
+}
+
+.verification.success {
     background-color: #e6ffed; /* light green */
     border-left: 4px solid #28a745; /* green */
-  }
-  .verification.failure {
+}
+
+.verification.failure {
     background-color: #ffe6e6; /* light red */
     border-left: 4px solid #dc3545; /* red */
-  }
-  .verification .assertion {
+}
+
+.verification .assertion {
     font-weight: 600;
     color: #333;
-  }
-  .verification .message {
+}
+
+.verification .message {
     font-size: 0.9rem;
     color: #555;
     margin-left: 4px;
+}
+
+/* Empty message styling */
+.empty-message {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    color: #666;
+    font-style: italic;
+    border: 1px dashed #ccc;
+}
+
+/* Make sure mobile view has proper status positioning */
+@media (max-width: 600px) {
+    .task-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .task-status {
+        align-self: flex-end;
+        margin-top: -30px;  /* Pull up to be on same line as title */
+    }
+}
+
+/* Enhanced Task Status Styles */
+.task-status {
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 15px;
+    display: inline-block;
+    text-align: center;
+    min-width: 100px;
+    font-size: 14px;
   }
   
+  /* Not Started status */
+  .task-status.not-started {
+    background-color: #f0f0f0;
+    color: #555;
+  }
+  
+  /* In Progress status */
+  .task-status.in-progress {
+    background-color: #f0ad4e; /* orange */
+    color: white;
+  }
+  
+  /* Completed status */
+  .task-status.completed {
+    background-color: #5cb85c; /* green */
+    color: white;
+  }
+  
+  /* Task header alignment */
+  .task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .task-header h3 {
+    margin: 0;
+    flex: 1;
+  }
+
+  /* Task description styles for multi-line support */
+.task-description {
+    margin-bottom: 15px;
+  }
+  
+  .task-description p {
+    margin: 0 0 8px 0;
+    line-height: 1.5;
+  }
+  
+  .task-description p:last-child {
+    margin-bottom: 0;
+  }
+  
+  /* Add some spacing between the description and other elements */
+  .task-card > .button {
+    margin-top: 10px;
+  }
+  
+  /* Ensure proper spacing in test results */
+  .test-results {
+    margin-top: 15px;
+  }

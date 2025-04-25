@@ -3,27 +3,9 @@
     "testerName": "Hrithik",
     "taskId": 1,
     "taskName": "Select patient test",
-    "time": 3.78,
+    "time": 4.77,
     "steps": 2,
     "errors": 2,
-    "completedAt": "2025-04-23T22:27:27.489Z"
-  },
-  {
-    "testerName": "Hrithik",
-    "taskId": 3,
-    "taskName": "herbie_basic_test",
-    "time": 7.83,
-    "steps": 2,
-    "errors": 1,
-    "completedAt": "2025-04-25T15:18:39.990Z"
-  },
-  {
-    "testerName": "Hrithik",
-    "taskId": 1,
-    "taskName": "Select patient test",
-    "time": 17.36,
-    "steps": 2,
-    "errors": 0,
-    "completedAt": "2025-04-25T15:24:41.102Z"
+    "completedAt": "2025-04-25T16:26:04.937Z"
   }
 ]
