@@ -151,9 +151,7 @@ function handleSocketMessage(event) {
             case 'heartbeat':
                 console.log('Heartbeat received');
                 break;
-            case 'completeTest':
-                alert("hi")
-                break;
+           
             default:
                 console.warn('Unknown message type:', data.type);
         }
@@ -306,13 +304,14 @@ function updateActiveTesters(testers) {
         
         const testerName = escapeHtml(tester.testerName || 'Unknown');
         const taskName = escapeHtml(tester.taskName || 'Unknown Task');
-        
+   
         testerCard.innerHTML = `
             <div class="tester-info">
                 <h3>${testerName}</h3>
                 <p>Task: ${taskName}</p>
             </div>
             <div class="timer" id="timer-${timerId}">00:00</div>
+            
         `;
         
         elemCache.activeTesters.appendChild(testerCard);
@@ -367,6 +366,9 @@ function updateCompletedTests(tests) {
             </div>
             <div>
                 <div class="time">${time}s</div>
+                 <div class="stats">
+                    Steps: ${test.steps} | Errors: ${test.errors} 
+            </div>
                 
             </div>
         `;

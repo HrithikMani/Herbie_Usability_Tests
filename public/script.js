@@ -288,7 +288,6 @@ const state = {
     state.observer.observe(elemCache.usabilityTestResults, { attributes:true });
   }
   
-  /** Render and send completeTest, including verify_statements */
   function handleTestResults(resultsData) {
     let newResults;
     try {
@@ -304,21 +303,29 @@ const state = {
     statusEl.textContent = 'Completed';
     statusEl.classList.replace('in-progress','completed');
   
-    // Render results
+    // Render basic results
     const resultsDiv = document.getElementById(`test-results-${newResults.taskId}`);
     let html = '<h3>Test Results</h3>';
-    Object.entries(newResults).forEach(([key,val])=>{
-      if (key==='verify_statements') return;
+    Object.entries(newResults).forEach(([key, val]) => {
+      if (key === 'verify_statements') return;
       html += `<p><strong>${escapeHtml(key)}</strong>: ${escapeHtml(val.toString())}</p>`;
     });
   
-    // Verifications
+    // Parse and render verifications, while tallying stats
+    let steps = 0, errors = 0;
     try {
       const verifs = JSON.parse(newResults.verify_statements);
       html += '<div class="verifications"><h4>Verifications</h4>';
-      Object.entries(verifs).forEach(([assertion, result])=>{
-        const cls = result.success?'verification success':'verification failure';
-        html += `<div class="${cls}"><div class="assertion">${escapeHtml(assertion)}</div><div class="message">${escapeHtml(result.message)}</div></div>`;
+      Object.entries(verifs).forEach(([assertion, result]) => {
+        steps++;
+        if (!result.success) errors++;
+  
+        const cls = result.success ? 'verification success' : 'verification failure';
+        html += `
+          <div class="${cls}">
+            <div class="assertion">${escapeHtml(assertion)}</div>
+            <div class="message">${escapeHtml(result.message)}</div>
+          </div>`;
       });
       html += '</div>';
     } catch {
@@ -327,11 +334,31 @@ const state = {
   
     resultsDiv.innerHTML = html;
   
-    // Convert time and notify leaderboard
-    const [mins, secs] = (newResults.time||'0:00').split(':');
+    // Compute numeric time
+    const [mins, secs] = (newResults.time || '0:00').split(':');
     const timeSec = (parseInt(mins,10)||0)*60 + (parseFloat(secs)||0);
-    sendWebSocketMessage({ type:'completeTest', testerName:state.testerName, taskId:newResults.taskId, taskName:newResults.taskName, time:timeSec, steps:parseInt(newResults.steps,10)||0, errors:parseInt(newResults.errors,10)||0, rating:2.5 });
+  
+
+// Inside handleTestResults, after you’ve counted steps & errors:
+const successes = steps - errors;
+
+
+
+
+    // Send real stats to the leaderboard
+    sendWebSocketMessage({
+      type: 'completeTest',
+      testerName: state.testerName,
+      taskId:   newResults.taskId,
+      taskName: newResults.taskName,
+      time:     timeSec,
+      steps:    steps,
+      errors:   errors,
+    
+    });
   }
+  
+  
   
   /** HTML-escape a string */
   function escapeHtml(text) {

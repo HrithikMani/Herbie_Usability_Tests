@@ -202,3 +202,35 @@ body {
     background: #a0a0a0;
     cursor: not-allowed;
 }
+/* Styling for verification results */
+.verifications {
+    margin-top: 1em;
+    padding-top: 1em;
+    border-top: 1px solid #ddd;
+  }
+  .verification {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .verification.success {
+    background-color: #e6ffed; /* light green */
+    border-left: 4px solid #28a745; /* green */
+  }
+  .verification.failure {
+    background-color: #ffe6e6; /* light red */
+    border-left: 4px solid #dc3545; /* red */
+  }
+  .verification .assertion {
+    font-weight: 600;
+    color: #333;
+  }
+  .verification .message {
+    font-size: 0.9rem;
+    color: #555;
+    margin-left: 4px;
+  }
+  
