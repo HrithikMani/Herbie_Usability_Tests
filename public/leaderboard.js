@@ -333,6 +333,7 @@ function updateActiveTesters(testers) {
             <div class="tester-info">
                 <h3>${escapedTesterName}</h3>
                 <p>Task: ${taskName}</p>
+                <p class="task-count">Previous tasks: ${testerTasks.length - 1}</p>
             </div>
             <div class="timer" id="timer-${timerId}">00:00</div>
         `;
@@ -348,7 +349,7 @@ function updateActiveTesters(testers) {
 }
 
 /**
- * Update the completed tests display
+ * Update the completed tests display with task count prioritization
  * @param {Array} tests - The completed tests data
  */
 function updateCompletedTests(tests) {
@@ -363,26 +364,84 @@ function updateCompletedTests(tests) {
     // Clear container before updating
     elemCache.completedTests.innerHTML = '';
     
-    // Group completed tests by tester name and task ID to avoid duplicates
-    const uniqueTests = {};
+    // Group tests by tester name to count tasks and calculate average time
+    const testerStats = {};
     
     tests.forEach(test => {
         if (!test || !test.testerName || !test.taskId) return;
         
-        const key = `${test.testerName}-${test.taskId}`;
+        const testerName = test.testerName;
+        const taskId = test.taskId;
+        const key = `${testerName}-${taskId}`;
         
-        // Keep only the most recent completion (or the fastest one if multiple exist)
-        if (!uniqueTests[key] || test.time < uniqueTests[key].time) {
-            uniqueTests[key] = test;
+        // Initialize tester stats if not exist
+        if (!testerStats[testerName]) {
+            testerStats[testerName] = {
+                name: testerName,
+                completedTasks: new Set(),  // Using Set to avoid duplicates
+                taskDetails: {},           // Store details for each task
+                totalTime: 0,
+                totalSteps: 0,
+                totalErrors: 0,
+                bestTime: Infinity
+            };
+        }
+        
+        // Update task details (keep fastest time if task completed multiple times)
+        if (!testerStats[testerName].taskDetails[taskId] || 
+            test.time < testerStats[testerName].taskDetails[taskId].time) {
+            
+            // If we already had a previous time for this task, subtract it
+            if (testerStats[testerName].taskDetails[taskId]) {
+                const oldTime = testerStats[testerName].taskDetails[taskId].time;
+                const oldSteps = testerStats[testerName].taskDetails[taskId].steps;
+                const oldErrors = testerStats[testerName].taskDetails[taskId].errors;
+                
+                testerStats[testerName].totalTime -= oldTime;
+                testerStats[testerName].totalSteps -= oldSteps;
+                testerStats[testerName].totalErrors -= oldErrors;
+            }
+            
+            // Add the new task details
+            testerStats[testerName].taskDetails[taskId] = {
+                taskName: test.taskName,
+                time: test.time,
+                steps: test.steps,
+                errors: test.errors,
+                completedAt: test.completedAt
+            };
+            
+            // Update totals
+            testerStats[testerName].completedTasks.add(taskId);
+            testerStats[testerName].totalTime += test.time;
+            testerStats[testerName].totalSteps += test.steps;
+            testerStats[testerName].totalErrors += test.errors;
+            
+            // Update best time if this is faster
+            if (test.time < testerStats[testerName].bestTime) {
+                testerStats[testerName].bestTime = test.time;
+            }
         }
     });
     
-    // Convert back to array and sort by time (fastest first)
-    const uniqueTestsArray = Object.values(uniqueTests);
-    uniqueTestsArray.sort((a, b) => a.time - b.time);
+    // Convert to array for sorting
+    const rankedTesters = Object.values(testerStats);
     
-    // Add each unique completed test
-    uniqueTestsArray.forEach((test, index) => {
+    // Sort by: 1) Number of completed tasks (descending), 2) Average time (ascending)
+    rankedTesters.sort((a, b) => {
+        // First sort by number of completed tasks (descending)
+        const taskDiff = b.completedTasks.size - a.completedTasks.size;
+        if (taskDiff !== 0) return taskDiff;
+        
+        // If same number of tasks, sort by total time (ascending)
+        return a.totalTime - b.totalTime;
+    });
+    
+    // Add each ranked tester to the leaderboard
+    rankedTesters.forEach((testerData, index) => {
+        // Skip testers with no completed tasks
+        if (testerData.completedTasks.size === 0) return;
+        
         // Determine rank class (gold, silver, bronze)
         let rankClass = '';
         if (index === 0) rankClass = 'first';
@@ -392,20 +451,27 @@ function updateCompletedTests(tests) {
         const entryElement = document.createElement('div');
         entryElement.className = 'leaderboard-entry';
         
-        const testerName = escapeHtml(test.testerName || 'Unknown');
-        const taskName = escapeHtml(test.taskName || 'Unknown Task');
-        const time = test.time;
-     
+        const testerName = escapeHtml(testerData.name || 'Unknown');
+        const tasksCompleted = testerData.completedTasks.size;
+        const avgTime = (testerData.totalTime / tasksCompleted).toFixed(2);
+        
+        // Create task list for tooltip
+        const taskList = Object.entries(testerData.taskDetails)
+            .map(([taskId, details]) => `${details.taskName}: ${details.time}s`)
+            .join(', ');
+        
         entryElement.innerHTML = `
             <div class="rank ${rankClass}">${index + 1}</div>
             <div class="result-info">
                 <h3>${testerName}</h3>
-                <p>Task: ${taskName}</p>
+                <p title="${taskList}">Tasks Completed: ${tasksCompleted}</p>
             </div>
             <div>
-                <div class="time">${time}s</div>
+                <div class="time">${avgTime}s avg</div>
                 <div class="stats">
-                    Steps: ${test.steps} | Errors: ${test.errors} 
+                    Total Time: ${testerData.totalTime.toFixed(2)}s | 
+                    Steps: ${testerData.totalSteps} | 
+                    Errors: ${testerData.totalErrors}
                 </div>
             </div>
         `;
