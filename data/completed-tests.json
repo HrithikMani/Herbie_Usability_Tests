@@ -3,9 +3,18 @@
     "testerName": "Hrithik",
     "taskId": 1,
     "taskName": "Task 2 A1-CPOE/A4: Prescribe Rx and Dismiss DUR Warning (66 Seconds)",
-    "time": 26.7,
+    "time": 0,
+    "steps": 0,
+    "errors": 0,
+    "completedAt": "2025-06-04T21:17:08.626Z"
+  },
+  {
+    "testerName": "Hrithik",
+    "taskId": 2,
+    "taskName": "Select patient test",
+    "time": 164.89,
     "steps": 2,
-    "errors": 2,
-    "completedAt": "2025-05-27T21:19:16.442Z"
+    "errors": 0,
+    "completedAt": "2025-06-04T21:35:07.211Z"
   }
 ]
