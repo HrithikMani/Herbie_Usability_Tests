@@ -21,6 +21,12 @@
         </header>
 
         <main class="dashboard">
+             <section class="board-section" aria-labelledby="leaderboard-heading">
+                <h2 id="leaderboard-heading">Leaderboard</h2>
+                <div id="completedTests" class="card-container" aria-live="polite">
+                    <div class="empty-message">No completed tests</div>
+                </div>
+            </section>
             <section class="board-section" aria-labelledby="active-testers-heading">
                 <h2 id="active-testers-heading">Active Testers</h2>
                 <div id="activeTesters" class="card-container" aria-live="polite">
@@ -28,12 +34,7 @@
                 </div>
             </section>
 
-            <section class="board-section" aria-labelledby="leaderboard-heading">
-                <h2 id="leaderboard-heading">Leaderboard</h2>
-                <div id="completedTests" class="card-container" aria-live="polite">
-                    <div class="empty-message">No completed tests</div>
-                </div>
-            </section>
+           
         </main>
 
         <div id="connectionStatus" class="connection-status connecting" aria-live="polite">

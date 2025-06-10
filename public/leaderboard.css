@@ -160,7 +160,7 @@ header {
 
 /* ===== Dashboard Layout ===== */
 .dashboard {
-    display: grid;
+    display: block;
     grid-template-columns: repeat(auto-fit, minmax(min(500px, 100%), 1fr));
     gap: var(--spacing-xl);
 }
