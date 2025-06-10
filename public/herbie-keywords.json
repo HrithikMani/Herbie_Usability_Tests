@@ -10,7 +10,7 @@
         "xpath": "//div[contains(text(),\"2025 Academy Agenda\")]"
       }
     ],
-    "webchartnow.com": [
+    "masterdaily.dev.webchart.app": [
       {
         "global": false,
         "hasVariable": false,
@@ -59,6 +59,38 @@
         "hasVariable": false,
         "keyword": "result",
         "xpath": "//*[@id='welcomeMessage']"
+      }
+    ],
+    "webchart.app": [
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "sidemenu",
+        "xpath": "//span[contains(@id,\"wc_menuicon\")]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "sidemenu tab",
+        "xpath": "//div[@id=\"wc_sidetabs\"]//a[contains(text(),\"{$}\")]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "Search",
+        "xpath": "//input[@value=\"Search\"]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "patient_name",
+        "xpath": "//*[@id=\"wc_pat_bar\"]/div/span[6]/span/a"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "medicine",
+        "xpath": "//*[@id=\"lv_unsent_prescription_listview_span\"]/table/tbody/tr[1]/td[2]/a[1]/strong"
       }
     ],
     "workforcenow.adp.com": [
