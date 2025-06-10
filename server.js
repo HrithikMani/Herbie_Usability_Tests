@@ -8,7 +8,7 @@ const fs = require('fs');
 const DATA_DIR = path.join(__dirname, 'data');
 const ACTIVE_TESTERS_FILE = path.join(DATA_DIR, 'active-testers.json');
 const COMPLETED_TESTS_FILE = path.join(DATA_DIR, 'completed-tests.json');
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 80;
 
 // Initialize Express app
 const app = express();

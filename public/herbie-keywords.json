@@ -10,7 +10,7 @@
         "xpath": "//div[contains(text(),\"2025 Academy Agenda\")]"
       }
     ],
-    "hrithik.webchartnow.com": [
+    "webchartnow.com": [
       {
         "global": false,
         "hasVariable": false,
