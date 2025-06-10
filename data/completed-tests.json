@@ -2,19 +2,19 @@
   {
     "testerName": "Hrithik",
     "taskId": 1,
-    "taskName": "Task 2 A1-CPOE/A4: Prescribe Rx and Dismiss DUR Warning (66 Seconds)",
+    "taskName": "Webchart Select Patient Task",
     "time": 0,
-    "steps": 0,
-    "errors": 0,
-    "completedAt": "2025-06-04T21:17:08.626Z"
+    "steps": 2,
+    "errors": 2,
+    "completedAt": "2025-06-10T14:57:53.940Z"
   },
   {
     "testerName": "Hrithik",
-    "taskId": 2,
-    "taskName": "Select patient test",
-    "time": 164.89,
-    "steps": 2,
-    "errors": 0,
-    "completedAt": "2025-06-04T21:35:07.211Z"
+    "taskId": 3,
+    "taskName": "Basic Task",
+    "time": 2,
+    "steps": 1,
+    "errors": 1,
+    "completedAt": "2025-06-10T15:29:42.192Z"
   }
 ]

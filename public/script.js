@@ -1,4 +1,4 @@
-// script.js — Complete with all fixes
+// script.js — Enhanced with Herbie Keywords functionality
 
 // Application state
 const state = {
@@ -11,7 +11,8 @@ const state = {
   reconnectAttempts: 0,
   reconnectTimeout: null,
   isReconnecting: false,
-  observer: null
+  observer: null,
+  herbieKeywords: null  // Added for herbie keywords
 };
 
 // Cached elements
@@ -62,6 +63,7 @@ function checkStoredTesterName() {
     elemCache.welcomeMessage.textContent = `Welcome, ${state.testerName}!`;
     connectWebSocket();
     fetchTasks();
+    fetchHerbieKeywords(); // Load herbie keywords
   } else {
     elemCache.testerModal.style.display = 'flex';
   }
@@ -93,6 +95,7 @@ function handleTesterFormSubmit(e) {
   elemCache.welcomeMessage.textContent = `Welcome, ${name}!`;
   connectWebSocket();
   fetchTasks();
+  fetchHerbieKeywords(); // Load herbie keywords
 }
 
 /** Logout handler */
@@ -189,6 +192,26 @@ function sendWebSocketMessage(msg) {
     return true;
   }
   return false;
+}
+
+/** Fetch herbie keywords JSON file */
+async function fetchHerbieKeywords() {
+  try {
+    console.log('Loading herbie keywords...');
+    const response = await fetch('herbie-keywords.json');
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    state.herbieKeywords = await response.json();
+    console.log('Herbie keywords loaded successfully:', state.herbieKeywords);
+    
+  } catch (error) {
+    console.error('Error loading herbie keywords:', error);
+    showError('Failed to load herbie keywords');
+    // Set empty keywords object as fallback
+    state.herbieKeywords = { globalKeywords: [], localKeywords: {} };
+  }
 }
 
 /** Fetch tasks.xlsx, parse to JSON, then render */
@@ -316,7 +339,7 @@ function nextPage() {
   if (state.currentPage < total) setPage(state.currentPage + 1);
 }
 
-/** Enhanced startTest function to update UI immediately */
+/** Enhanced startTest function with herbie keywords */
 function startTest(id) {
   const task = state.tasks.find(t => t.id === id);
   if (!task) return;
@@ -334,16 +357,23 @@ function startTest(id) {
     taskId: id, 
     taskName: task.name 
   });
-
-  // Post message to Herbie iframe/script
+console.log(state.herbieKeywords)
+  // Post message to Herbie iframe/script with herbie keywords included
   window.postMessage({ 
     action: 'startUsabilityTest', 
     testerName: state.testerName, 
     taskId: id, 
     taskName: task.name, 
     description: task.description || '', 
-    testHerbieScript: task.herbie_script || ''
+    testHerbieScript: task.herbie_script || '',
+    herbieKeywords: state.herbieKeywords || null
   }, '*');
+
+  // If herbie keywords aren't loaded yet, try to fetch them
+  if (!state.herbieKeywords) {
+    console.warn('Herbie keywords not loaded - will retry loading');
+    fetchHerbieKeywords();
+  }
 
   if (task.url) window.open(task.url, '_blank');
 }
@@ -518,3 +548,6 @@ document.addEventListener('DOMContentLoaded', init);
 window.prevPage = prevPage;
 window.nextPage = nextPage;
 window.setPage = setPage;
+
+// Expose herbie keywords function globally for external access
+window.fetchHerbieKeywords = fetchHerbieKeywords;
