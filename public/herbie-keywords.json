@@ -84,7 +84,7 @@
         "global": false,
         "hasVariable": false,
         "keyword": "patient_name",
-        "xpath": "/html/body/div[1]/div[2]/div/div[3]/div[1]/div/span[6]/span/a"
+        "xpath": "//*[@id=\"wc_pat_bar\"]/div/span[6]/span/a"
       },
       {
         "global": false,
