@@ -400,7 +400,7 @@ function handleTestResults(resultsData) {
     console.error('Invalid JSON in data-test-results:', error);
     return;
   }
-
+console.log('Received test results:', JSON.parse(resultsData));
   // Update status
   const card = document.querySelector(`[data-task-id='${newResults.taskId}']`);
   if (card) {
