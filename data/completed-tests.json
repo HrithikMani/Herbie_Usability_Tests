@@ -1,6 +1,15 @@
 [
   {
     "testerName": "Hrihtik",
+    "taskId": 2,
+    "taskName": "Webchart Select Patient Task",
+    "time": 2.47,
+    "steps": 1,
+    "errors": 1,
+    "completedAt": "2025-06-11T15:51:48.447Z"
+  },
+  {
+    "testerName": "Hrihtik",
     "taskId": 1,
     "taskName": "Basic Task",
     "time": 2.85,
@@ -10,20 +19,11 @@
   },
   {
     "testerName": "Hrihtik",
-    "taskId": 2,
-    "taskName": "Webchart Select Patient Task",
-    "time": 10.14,
-    "steps": 1,
-    "errors": 1,
-    "completedAt": "2025-06-10T20:41:42.584Z"
-  },
-  {
-    "testerName": "Hrihtik",
     "taskId": 3,
     "taskName": "Webchart Prescribe a Medicine",
-    "time": 13.59,
+    "time": 6.16,
     "steps": 2,
-    "errors": 0,
-    "completedAt": "2025-06-10T20:27:32.095Z"
+    "errors": 2,
+    "completedAt": "2025-06-11T16:25:04.118Z"
   }
 ]
