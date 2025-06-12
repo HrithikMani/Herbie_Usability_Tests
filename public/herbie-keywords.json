@@ -90,7 +90,7 @@
         "global": false,
         "hasVariable": false,
         "keyword": "medicine",
-        "xpath": "//*[@id=\"lv_unsent_prescription_listview_span\"]/table/tbody/tr[1]/td[2]/a[1]/strong"
+        "xpath": "//a[contains(text(),\"amoxicillin 500 mg capsule\")]"
       }
     ],
     "workforcenow.adp.com": [

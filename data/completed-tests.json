@@ -25,5 +25,14 @@
     "steps": 2,
     "errors": 2,
     "completedAt": "2025-06-11T16:25:04.118Z"
+  },
+  {
+    "testerName": "Hrihtik",
+    "taskId": 4,
+    "taskName": "ADP Task",
+    "time": 7.02,
+    "steps": 1,
+    "errors": 0,
+    "completedAt": "2025-06-12T15:34:09.069Z"
   }
 ]
