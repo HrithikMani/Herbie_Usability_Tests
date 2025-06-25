@@ -1,0 +1,125 @@
+{
+  "globalKeywords": [],
+  "localKeywords": {
+    "claude.ai": [],
+    "drive.google.com": [
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "Academy_agenda_file",
+        "xpath": "//div[contains(text(),\"2025 Academy Agenda\")]"
+      }
+    ],
+    "masterdaily.dev.webchart.app": [
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "sidemenu",
+        "xpath": "//span[contains(@id,\"wc_menuicon\")]"
+      },
+      {
+        "global": false,
+        "hasVariable": true,
+        "keyword": "sidemenu tab",
+        "xpath": "//div[@id=\"wc_sidetabs\"]//a[contains(text(),\"{$}\")]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "Search",
+        "xpath": "//input[@value=\"Search\"]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "patient_name",
+        "xpath": "//*[@id=\"wc_pat_bar\"]/div/span[6]/span/a"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "medicine",
+        "xpath": "//li[contains(text(),\"amoxicillin\")]"
+      }
+    ],
+    "mieweb.github.io": [
+      {
+        "hasVariable": false,
+        "keyword": "lastname",
+        "xpath": "//*[@id=\"lastName\"]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "submit",
+        "xpath": "//button[contains(text(),\"Submit\")]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "result",
+        "xpath": "//*[@id='welcomeMessage']"
+      }
+    ],
+    "webchart.app": [
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "sidemenu",
+        "xpath": "//span[contains(@id,\"wc_menuicon\")]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "sidemenu tab",
+        "xpath": "//div[@id=\"wc_sidetabs\"]//a[contains(text(),\"{$}\")]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "Search",
+        "xpath": "//input[@value=\"Search\"]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "patient_name",
+        "xpath": "//*[@id=\"wc_pat_bar\"]/div/span[6]/span/a"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "medicine",
+        "xpath": "//a[contains(text(),\"amoxicillin 500 mg capsule\")]"
+      }
+    ],
+    "workforcenow.adp.com": [
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "adp_logo",
+        "xpath": "/html/body/sfc-shell/sfc-shell-app-bar/img"
+      }
+    ],
+    "www.google.com": [
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "search",
+        "xpath": "//*[@id=\"APjFqb\"]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "submit",
+        "xpath": "//input[@value=\"Google Search\"]"
+      },
+      {
+        "global": false,
+        "hasVariable": false,
+        "keyword": "result",
+        "xpath": "/html/body/div[3]/div/div[12]/div[3]/div[1]/div[2]/div/div/div/div/div/div/div/div/div/div/div[1]/div/div/div/div/div[3]/div[1]/div/div/div/div/div/div/div/div/div/div[3]/div/span/div/div/div[3]/div/div[1]/div/div/div[2]/div[1]/div/span"
+      }
+    ]
+  }
+}
