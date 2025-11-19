@@ -1,8 +1,13 @@
-<!-- src/routes/+page.svelte -->
+<!-- src/routes/dashboard/+page.svelte -->
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { get } from 'svelte/store';
-  import { user, logout, apiRequest } from '$lib/stores/auth.js';
+  import { goto } from '$app/navigation';
+  import { 
+    authStore, 
+    logout, 
+    getCurrentUser,
+    requireAuth 
+  } from '$lib/stores/auth.js';
   import { 
     loadTasks, 
     loadHerbieKeywords,
@@ -13,6 +18,14 @@
     isLoadingTasks,
     taskLoadError
   } from '$lib/stores/tasks.js';
+  import { 
+    realtimeManager,
+    activeTesters,
+    completedTests,
+    startTest,
+    completeTest,
+    herbieKeywords
+  } from '$lib/stores/realtime.js';
   import TaskCard from '$lib/components/TaskCard.svelte';
   import Pagination from '$lib/components/Pagination.svelte';
   import ConnectionStatus from '$lib/components/ConnectionStatus.svelte';
@@ -20,28 +33,41 @@
   let searchInput = '';
   let testResultsObserver;
   let errorMessage = '';
-  let activeTests = [];
-  let completedTests = [];
   let initializationComplete = false;
-
-  // Get current user data at top level to avoid scoping issues
-  $: currentUser = $user;
+  let currentUser = null;
 
   // Reactive declarations
   $: searchQuery.set(searchInput);
+  $: currentUser = getCurrentUser();
 
+  // Auth guard - redirect to login if not authenticated
   onMount(async () => {
-    console.log('Page mounted, initializing...');
+    if (!requireAuth()) {
+      goto('/auth/login');
+      return;
+    }
+
+    console.log('Dashboard mounted, initializing...');
     
     await initializeApplication();
-    setupTestResultObserver();
-    loadLeaderboardData();
 
-    // Set up periodic leaderboard refresh
-    const leaderboardInterval = setInterval(loadLeaderboardData, 5000);
+    // Connect to real-time updates
+    realtimeManager.connect();
+
+    // Set up test results observer
+    setupTestResultObserver();
+
+    // Handle visibility change
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && requireAuth()) {
+        console.log('Page became visible, ensuring real-time connection');
+        realtimeManager.connect();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      clearInterval(leaderboardInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   });
 
@@ -49,13 +75,14 @@
     if (testResultsObserver) {
       testResultsObserver.disconnect();
     }
+    realtimeManager.disconnect();
   });
 
   async function initializeApplication() {
     try {
-      console.log('🚀 Initializing application...');
+      console.log('🚀 Initializing dashboard...');
       
-      // Load tasks from Excel with retry logic
+      // Load tasks from Excel
       console.log('📊 Loading tasks from Excel...');
       await loadTasks();
       
@@ -68,71 +95,51 @@
         console.warn('Herbie keywords loading failed (non-critical):', error);
       }
       
-      console.log('✅ Application initialization complete');
+      console.log('✅ Dashboard initialization complete');
       initializationComplete = true;
       
     } catch (error) {
-      console.error('❌ Application initialization failed:', error);
-      showError(`Failed to initialize application: ${error.message}`);
+      console.error('❌ Dashboard initialization failed:', error);
+      showError(`Failed to initialize dashboard: ${error.message}`);
     }
   }
 
-  async function loadLeaderboardData() {
-    try {
-      const data = await apiRequest('/api/leaderboard');
-      activeTests = data.activeTesters || [];
-      completedTests = data.completedTests || [];
-    } catch (error) {
-      console.error('Error loading leaderboard data:', error);
-    }
+  function handleLogout() {
+    console.log('User logging out');
+    logout();
+    goto('/auth/login');
   }
 
-  async function handleStartTest(event) {
+  function handleStartTest(event) {
     const { task } = event.detail;
     console.log('Starting test for task:', task);
     
-    try {
-      const result = await apiRequest('/api/start-test', {
-        method: 'POST',
-        body: JSON.stringify({
-          taskId: task.id,
-          taskName: task.name
-        })
-      });
+    if (!currentUser) {
+      showError('User session expired. Please log in again.');
+      handleLogout();
+      return;
+    }
 
-      if (result.success) {
-        // Post message for Herbie integration
-        if (typeof window !== 'undefined') {
-          try {
-            window.postMessage({
-              action: 'startUsabilityTest',
-              testerName: currentUser.username,
-              taskId: task.id,
-              taskName: task.name,
-              description: task.description || '',
-              testHerbieScript: task.herbie_script || '',
-              herbieKeywords: null // Will be loaded separately
-            }, '*');
-          } catch (error) {
-            console.error('Error posting message for Herbie:', error);
-          }
+    const success = startTest(
+      currentUser.firstName + ' ' + currentUser.lastName,
+      task.id,
+      task.name,
+      task.description,
+      task.herbie_script,
+      $herbieKeywords
+    );
+
+    if (success) {
+      // Open task URL if available
+      if (task.url) {
+        try {
+          window.open(task.url, '_blank');
+        } catch (error) {
+          console.error('Error opening task URL:', error);
         }
-
-        // Open task URL if available
-        if (task.url) {
-          try {
-            window.open(task.url, '_blank');
-          } catch (error) {
-            console.error('Error opening task URL:', error);
-          }
-        }
-
-        // Refresh leaderboard data
-        await loadLeaderboardData();
       }
-    } catch (error) {
-      console.error('Error starting test:', error);
-      showError('Failed to start test. Please try again.');
+    } else {
+      showError('Failed to start test. Please check your connection.');
     }
   }
 
@@ -160,7 +167,7 @@
     testResultsObserver.observe(resultsDiv, { attributes: true });
   }
 
-  async function handleTestResults(resultsData) {
+  function handleTestResults(resultsData) {
     try {
       const results = JSON.parse(resultsData);
       console.log('Received test results:', results);
@@ -186,24 +193,23 @@
       const [mins, secs] = (results.time || '0:00').split(':');
       const timeSec = (parseInt(mins, 10) || 0) * 60 + (parseFloat(secs) || 0);
 
-      // Send completion data to server
-      try {
-        const result = await apiRequest('/api/complete-test', {
-          method: 'POST',
-          body: JSON.stringify({
-            taskId: results.taskId,
-            time: timeSec,
-            steps: steps,
-            errors: errors
-          })
-        });
+      if (!currentUser) {
+        showError('User session expired. Please log in again.');
+        handleLogout();
+        return;
+      }
 
-        if (result.success) {
-          // Refresh leaderboard data
-          await loadLeaderboardData();
-        }
-      } catch (error) {
-        console.error('Error completing test:', error);
+      // Send completion data
+      const success = completeTest(
+        currentUser.firstName + ' ' + currentUser.lastName,
+        results.taskId,
+        results.taskName,
+        timeSec,
+        steps,
+        errors
+      );
+
+      if (!success) {
         showError('Failed to submit test results. Please check your connection.');
       }
 
@@ -254,16 +260,20 @@
   }
 
   function getTaskStatus(task) {
+    if (!currentUser) return 'not-started';
+    
+    const userFullName = currentUser.firstName + ' ' + currentUser.lastName;
+    
     // Check completed first (higher priority)
-    const isCompleted = completedTests.some(t => 
-      t.tester_name === currentUser?.username && t.task_id === task.id
+    const isCompleted = $completedTests.some(t => 
+      t.testerName === userFullName && t.taskId === task.id
     );
     
     if (isCompleted) return 'completed';
     
     // Then check active
-    const isActive = activeTests.some(t => 
-      t.tester_name === currentUser?.username && t.task_id === task.id
+    const isActive = $activeTesters.some(t => 
+      t.testerName === userFullName && t.taskId === task.id
     );
     
     if (isActive) return 'in-progress';
@@ -302,15 +312,11 @@
       showError(`Retry failed: ${error.message}`);
     }
   }
-
-  async function handleLogout() {
-    await logout();
-  }
 </script>
 
 <svelte:head>
-  <title>Usability Testing - Home</title>
-  <meta name="description" content="Usability testing platform with real-time leaderboard and task management" />
+  <title>Dashboard - Usability Olympics</title>
+  <meta name="description" content="Usability testing dashboard with task management and real-time leaderboard" />
 </svelte:head>
 
 {#if errorMessage}
@@ -320,11 +326,13 @@
   </div>
 {/if}
 
-<div class="main-content">
-  <header class="header">
+<div class="dashboard-container">
+  <header class="dashboard-header">
     <div class="header-left">
       <h1>Usability Olympics</h1>
-      <p class="welcome-message">Welcome, {currentUser?.fullName || currentUser?.username}!</p>
+      {#if currentUser}
+        <p class="welcome-message">Welcome back, {currentUser.firstName}!</p>
+      {/if}
     </div>
     <div class="header-right">
       <input 
@@ -337,114 +345,106 @@
       <a href="/leaderboard" class="button" target="_blank" rel="noopener noreferrer">
         View Leaderboard
       </a>
-      <button on:click={handleLogout} class="logout-button">
-        Logout
-      </button>
+      <div class="user-menu">
+        <button class="user-button" title="User menu">
+          <span class="user-avatar">
+            {currentUser ? currentUser.firstName.charAt(0).toUpperCase() : '?'}
+          </span>
+          <span class="user-name">
+            {currentUser ? currentUser.firstName : 'User'}
+          </span>
+        </button>
+        <div class="user-dropdown">
+          <a href="/profile" class="dropdown-item">Profile</a>
+          <a href="/settings" class="dropdown-item">Settings</a>
+          <hr class="dropdown-divider">
+          <button on:click={handleLogout} class="dropdown-item logout-item">
+            Logout
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
-  {#if $isLoadingTasks}
-    <div class="loading-message">
-      <div class="loading-spinner"></div>
-      <p>Loading tasks from Excel file...</p>
-    </div>
-  {:else if $taskLoadError}
-    <div class="error-container">
-      <div class="error-icon">⚠️</div>
-      <h3>Failed to Load Tasks</h3>
-      <p>{$taskLoadError}</p>
-      <div class="error-actions">
-        <button class="button" on:click={retryLoadTasks}>
-          Retry Loading
-        </button>
-        <details class="troubleshooting">
-          <summary>Troubleshooting</summary>
-          <ul>
-            <li>Ensure <code>static/tasks.xlsx</code> exists</li>
-            <li>Check file permissions</li>
-            <li>Verify Excel file format (must have headers)</li>
-            <li>Required columns: id, name</li>
-          </ul>
-        </details>
+  <main class="dashboard-main">
+    {#if $isLoadingTasks}
+      <div class="loading-message">
+        <div class="loading-spinner"></div>
+        <p>Loading tasks from Excel file...</p>
       </div>
-    </div>
-  {:else if !initializationComplete}
-    <div class="loading-message">
-      <p>Initializing application...</p>
-    </div>
-  {:else}
-    <div class="task-list">
-      {#each $paginatedTasks as task (task.id)}
-        <TaskCard 
-          {task} 
-          status={getTaskStatus(task)}
-          on:startTest={handleStartTest}
-        />
-      {:else}
-        <div class="empty-message">
-          {#if searchInput}
-            No tasks matching "{searchInput}"
-          {:else}
-            No tasks available
-          {/if}
+    {:else if $taskLoadError}
+      <div class="error-container">
+        <div class="error-icon">⚠️</div>
+        <h3>Failed to Load Tasks</h3>
+        <p>{$taskLoadError}</p>
+        <div class="error-actions">
+          <button class="button" on:click={retryLoadTasks}>
+            Retry Loading
+          </button>
         </div>
-      {/each}
-    </div>
+      </div>
+    {:else if !initializationComplete}
+      <div class="loading-message">
+        <p>Initializing dashboard...</p>
+      </div>
+    {:else}
+      <div class="task-list">
+        {#each $paginatedTasks as task (task.id)}
+          <TaskCard 
+            {task} 
+            status={getTaskStatus(task)}
+            on:startTest={handleStartTest}
+          />
+        {:else}
+          <div class="empty-message">
+            {#if searchInput}
+              No tasks matching "{searchInput}"
+            {:else}
+              No tasks available
+            {/if}
+          </div>
+        {/each}
+      </div>
 
-    <Pagination />
-  {/if}
+      <Pagination />
+    {/if}
 
-  <!-- Hidden element for test results observation -->
-  <div id="usabilityTestResults" style="display: none;" aria-hidden="true"></div>
+    <!-- Hidden element for test results observation -->
+    <div id="usabilityTestResults" style="display: none;" aria-hidden="true"></div>
+  </main>
+
+  <ConnectionStatus />
 </div>
 
-<ConnectionStatus />
-
 <style>
-  .main-content {
-    animation: fadeIn 0.3s ease-in;
+  .dashboard-container {
+    min-height: 100vh;
+    background-color: #f8f9fa;
+  }
+
+  .dashboard-header {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #e5e7eb;
-  }
-
-  .header-left {
-    display: flex;
-    flex-direction: column;
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
 
   .header-left h1 {
+    margin: 0;
     color: #333;
-    font-size: 2rem;
-    margin: 0 0 8px 0;
-    font-weight: 700;
+    font-size: 1.5rem;
   }
 
   .welcome-message {
-    margin: 0;
-    font-weight: 600;
+    margin: 5px 0 0 0;
+    font-weight: 500;
     color: #62929a;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
   }
 
   .header-right {
@@ -454,33 +454,33 @@
   }
 
   .search-box {
-    padding: 12px 16px;
-    border: 2px solid #ccc;
+    padding: 10px 16px;
+    border: 2px solid #e5e7eb;
     border-radius: 8px;
     width: 300px;
-    font-size: 16px;
-    transition: all 0.3s ease-in-out;
+    font-size: 14px;
+    transition: all 0.2s ease;
     outline: none;
   }
 
   .search-box:focus {
     border-color: #62929a;
-    box-shadow: 0 0 5px rgba(98, 146, 154, 0.5);
+    box-shadow: 0 0 0 3px rgba(98, 146, 154, 0.1);
   }
 
   .button {
-    padding: 12px 18px;
-    border-radius: 8px;
+    padding: 10px 18px;
+    border-radius: 6px;
     background: #62929a;
     color: white;
     border: none;
     cursor: pointer;
     font-size: 14px;
-    font-weight: 600;
-    transition: all 0.2s ease-in-out;
+    font-weight: 500;
     text-decoration: none;
-    display: inline-block;
-    text-align: center;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
   }
 
   .button:hover {
@@ -488,26 +488,104 @@
     transform: translateY(-1px);
   }
 
-  .logout-button {
-    background-color: #d9534f;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 12px 18px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    transition: all 0.2s ease;
+  .user-menu {
+    position: relative;
   }
 
-  .logout-button:hover {
-    background-color: #c9302c;
-    transform: translateY(-1px);
+  .user-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+  }
+
+  .user-button:hover {
+    background-color: #f3f4f6;
+  }
+
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .user-name {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .user-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 8px;
+    min-width: 160px;
+    display: none;
+    z-index: 1000;
+  }
+
+  .user-menu:hover .user-dropdown {
+    display: block;
+  }
+
+  .dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    text-decoration: none;
+    color: #374151;
+    border: none;
+    background: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: left;
+    transition: background-color 0.2s ease;
+  }
+
+  .dropdown-item:hover {
+    background-color: #f3f4f6;
+  }
+
+  .logout-item {
+    color: #dc2626;
+  }
+
+  .logout-item:hover {
+    background-color: #fef2f2;
+  }
+
+  .dropdown-divider {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 4px 0;
+  }
+
+  .dashboard-main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
   }
 
   .loading-message {
     text-align: center;
-    padding: 40px 20px;
+    padding: 60px 20px;
     color: #666;
     display: flex;
     flex-direction: column;
@@ -553,52 +631,38 @@
     margin-bottom: 20px;
   }
 
-  .error-actions {
+  .task-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 15px;
+    gap: 16px;
   }
 
-  .troubleshooting {
-    max-width: 400px;
-    text-align: left;
-  }
-
-  .troubleshooting summary {
-    cursor: pointer;
-    font-weight: bold;
-    color: #856404;
-  }
-
-  .troubleshooting ul {
-    margin-top: 10px;
-    color: #856404;
-  }
-
-  .troubleshooting code {
-    background: #f8f9fa;
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-family: monospace;
+  .empty-message {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 8px;
+    color: #666;
+    font-style: italic;
+    border: 1px dashed #ccc;
   }
 
   .error-message {
     position: fixed;
     top: 20px;
     right: 20px;
-    background-color: #d9534f;
+    background-color: #dc2626;
     color: white;
     padding: 12px 20px;
-    border-radius: 5px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     z-index: 1000;
     animation: slideInRight 0.3s ease;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 10px;
-    max-width: 300px;
+    max-width: 350px;
   }
 
   .error-close {
@@ -627,44 +691,35 @@
     }
   }
 
-  .task-list {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    margin-bottom: 30px;
-  }
-
-  .empty-message {
-    text-align: center;
-    padding: 40px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    color: #666;
-    font-style: italic;
-    border: 1px dashed #ccc;
-  }
-
-  /* Responsive adjustments */
+  /* Responsive design */
   @media (max-width: 768px) {
-    .main-content {
+    .dashboard-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 15px;
       padding: 15px;
     }
-    
-    .header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 20px;
-    }
-    
+
     .header-right {
-      width: 100%;
       justify-content: space-between;
       flex-wrap: wrap;
+      gap: 10px;
     }
-    
+
     .search-box {
       width: 100%;
       max-width: 300px;
+    }
+
+    .dashboard-main {
+      padding: 15px;
+    }
+
+    .error-message {
+      top: 10px;
+      right: 10px;
+      left: 10px;
+      max-width: none;
     }
   }
 
@@ -672,17 +727,9 @@
     .header-right {
       flex-direction: column;
       align-items: stretch;
-      gap: 10px;
-    }
-    
-    .search-box {
-      max-width: none;
     }
 
-    .error-message {
-      top: 10px;
-      right: 10px;
-      left: 10px;
+    .search-box {
       max-width: none;
     }
   }

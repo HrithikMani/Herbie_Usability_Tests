@@ -1,38 +1,20 @@
 [
   {
-    "testerName": "Hrihtik",
-    "taskId": 2,
-    "taskName": "Webchart Select Patient Task",
-    "time": 2.47,
-    "steps": 1,
-    "errors": 1,
-    "completedAt": "2025-06-11T15:51:48.447Z"
-  },
-  {
-    "testerName": "Hrihtik",
+    "testerName": "Mani",
     "taskId": 1,
     "taskName": "Basic Task",
-    "time": 2.85,
+    "time": 1.94,
     "steps": 1,
     "errors": 0,
-    "completedAt": "2025-06-10T20:44:49.512Z"
+    "completedAt": "2025-07-01T18:11:07.838Z"
   },
   {
-    "testerName": "Hrihtik",
-    "taskId": 3,
-    "taskName": "Webchart Prescribe a Medicine",
-    "time": 6.16,
-    "steps": 2,
-    "errors": 2,
-    "completedAt": "2025-06-11T16:25:04.118Z"
-  },
-  {
-    "testerName": "Hrihtik",
+    "testerName": "Mani",
     "taskId": 4,
-    "taskName": "ADP Task",
-    "time": 7.02,
-    "steps": 1,
+    "taskName": "Webchart Prescribe a Medicine",
+    "time": 2,
+    "steps": 0,
     "errors": 0,
-    "completedAt": "2025-06-12T15:34:09.069Z"
+    "completedAt": "2025-07-01T19:03:48.116Z"
   }
 ]
